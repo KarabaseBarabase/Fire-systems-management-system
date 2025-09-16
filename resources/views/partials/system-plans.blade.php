@@ -1,0 +1,6 @@
+<div class="tab-content" id="plans">
+    <div class="section">
+        <h3>Планы работ</h3>
+        <p>Планы работ отсутствуют</p>
+    </div>
+</div>
