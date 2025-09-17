@@ -147,14 +147,17 @@
         /* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ТАБОВ */
         .tab-content {
             display: none;
-            padding: 20px 0;
             opacity: 0;
             transition: opacity 0.3s ease;
+            height: 0;
+            overflow: hidden;
         }
 
         .tab-content.active {
-            display: block !important;
-            opacity: 1 !important;
+            display: block;
+            opacity: 1;
+            height: auto;
+            overflow: visible;
         }
 
         .section {
