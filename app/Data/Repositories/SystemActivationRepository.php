@@ -44,10 +44,18 @@ class SystemActivationRepository extends Repository
         $activation->recordUuid = $data['record_uuid'];
         $activation->systemId = (int) $data['system_id'];
         $activation->location = $data['location'] ?? null;
-        $activation->activationDate = $data['activation_date'];
+
+        // Преобразуем строку в DateTimeImmutable
+        $activation->activationDate = $data['activation_date'] ?
+            new \DateTimeImmutable($data['activation_date']) : null;
+
         $activation->reportedBy = $data['reported_by'] ?? null;
         $activation->notes = $data['notes'] ?? null;
-        $activation->updatedAt = $data['updated_at'] ?? null;
+
+        // Также преобразуем updatedAt
+        $activation->updatedAt = $data['updated_at'] ?
+            new \DateTimeImmutable($data['updated_at']) : null;
+
         $activation->updatedBy = $data['updated_by'] ? (int) $data['updated_by'] : null;
 
         return $activation;
@@ -59,10 +67,12 @@ class SystemActivationRepository extends Repository
             'record_uuid' => $entity->recordUuid,
             'system_id' => $entity->systemId,
             'location' => $entity->location,
-            'activation_date' => $entity->activationDate,
+            'activation_date' => $entity->activationDate ?
+                $entity->activationDate->format('Y-m-d H:i:s') : null,
             'reported_by' => $entity->reportedBy,
             'notes' => $entity->notes,
-            'updated_at' => $entity->updatedAt,
+            'updated_at' => $entity->updatedAt ?
+                $entity->updatedAt->format('Y-m-d H:i:s') : null,
             'updated_by' => $entity->updatedBy
         ];
     }

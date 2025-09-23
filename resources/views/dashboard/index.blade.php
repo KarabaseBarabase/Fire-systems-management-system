@@ -5,238 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг пожарных систем</title>
-    <style>
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-        }
-
-        .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .user-name {
-            font-weight: bold;
-        }
-
-        .user-role {
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .logout-btn {
-            padding: 8px 15px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .main-content {
-            display: flex;
-            flex: 1;
-        }
-
-        .sidebar {
-            width: 220px;
-            background-color: #2c3e50;
-            padding: 20px 0;
-        }
-
-        .menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: white;
-            text-decoration: none;
-            transition: background-color 0.3s;
-            gap: 10px;
-        }
-
-        .menu-item:hover,
-        .menu-item.active {
-            background-color: #34495e;
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-
-        .systems-table {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .table-controls {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 15px;
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            flex: 1;
-        }
-
-        .search-input,
-        .status-filter,
-        .branch-filter {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .export-btn {
-            padding: 8px 15px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            margin-bottom: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        th:hover {
-            background-color: #e9ecef;
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .warning {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .danger {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .btn-view,
-        .btn-edit {
-            padding: 4px 8px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-right: 5px;
-        }
-
-        .btn-view {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-edit {
-            background-color: #ffc107;
-            color: #212529;
-        }
-
-        .table-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-        }
-
-        .pagination {
-            display: flex;
-            gap: 5px;
-        }
-
-        .page-nav,
-        .page-num {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            background-color: white;
-            cursor: pointer;
-        }
-
-        .page-nav:disabled {
-            background-color: #f8f9fa;
-            cursor: not-allowed;
-        }
-
-        .page-num.active {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/index.css') }}">
 </head>
 
 <body>
@@ -296,9 +65,14 @@
                                 <?php endif; ?>
                             </select>
                         </div>
-                        <button class="export-btn">
-                            <span>Экспорт</span>
-                        </button>
+                        <div>
+                            <button class="export-btn">
+                                <span>Экспорт</span>
+                            </button>
+                            <button class="add-system-btn" onclick="addNewSystem()">
+                                <span>Добавить систему</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="table-container">
@@ -310,7 +84,6 @@
                                     <th>Тип системы</th>
                                     <th data-sort="last-check">Последняя проверка</th>
                                     <th>Филиал</th>
-                                    <th>Ответственный</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -325,19 +98,25 @@
                                     <td><?= $system['last_check_date'] ? htmlspecialchars($system['last_check_date']) : 'Нет данных' ?>
                                     </td>
                                     <td><?= htmlspecialchars($system['branch_name']) ?></td>
-                                    <td><?= htmlspecialchars($system['responsible_person']) ?></td>
                                     <td>
                                         <button class="btn-view"
                                             onclick="window.location.href='{{ route('system.show', $system['id']) }}'">
                                             Просмотр
                                         </button>
-                                        <button class="btn-edit" data-role="engineer">Ред.</button>
+                                        <button class="btn-edit" data-role="engineer"
+                                            onclick="editSystem(<?= $system['id'] ?>)">
+                                            Ред.
+                                        </button>
+                                        <button class="btn-delete"
+                                            onclick="confirmDelete('<?= $system['uuid'] ?>', '<?= htmlspecialchars($system['name']) ?>')">
+                                            Удалить
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php    endforeach; ?>
                                 <?php else: ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center;">Нет данных о пожарных системах</td>
+                                    <td colspan="7" style="text-align: center;">Нет данных о пожарных системах</td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -357,9 +136,91 @@
         </div>
     </div>
 
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>Подтверждение удаления</h3>
+            <p>Вы уверены, что хотите удалить систему "<span id="systemNameToDelete"></span>"?</p>
+            <p class="text-danger">Это действие нельзя отменить!</p>
+            <div class="modal-buttons">
+                <button onclick="cancelDelete()"
+                    style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Отмена
+                </button>
+                <button onclick="deleteSystem()"
+                    style="padding: 8px 15px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let systemToDelete = null;
+
         function openPage(systemId) {
             window.location.href = "modal_window.php?id=" + systemId;
+        }
+
+        // Функции для работы с системами
+        function addNewSystem() {
+            alert('Добавление новой системы');
+        }
+
+        function editSystem(systemId) {
+            alert('Редактирование системы ID: ' + systemId);
+        }
+
+        function confirmDelete(systemId, systemName) {
+            console.log("confirmDelete called with:", systemId, systemName);
+            systemToDelete = systemId;
+            document.getElementById('systemNameToDelete').textContent = systemName;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function cancelDelete() {
+            systemToDelete = null;
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        function deleteSystem() {
+            console.log("deleteSystem called");
+            console.log("systemToDelete:", systemToDelete);
+
+            if (systemToDelete) {
+                console.log("Sending DELETE request for UUID:", systemToDelete);
+
+                fetch(`/systems/${systemToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        console.log("Response status:", response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Response data:", data);
+                        if (data.success) {
+                            alert(data.message || 'Система успешно удалена');
+                            location.reload();
+                        } else {
+                            alert(data.error || 'Ошибка при удалении системы');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Ошибка при удалении системы');
+                    });
+
+                cancelDelete();
+            } else {
+                console.error("systemToDelete is null or undefined");
+                alert("Ошибка: система для удаления не выбрана");
+            }
         }
 
         // Простая сортировка таблицы
@@ -370,8 +231,6 @@
                 // добавить логику сортировки
             });
         });
-
-
 
         // Фильтрация по филиалам
         function applyFilters() {
@@ -411,6 +270,14 @@
         // Вешаем обработчики на все фильтры
         document.querySelector('.search-input').addEventListener('input', applyFilters);
         document.querySelector('.branch-filter').addEventListener('change', applyFilters);
+
+        // Закрытие модального окна при клике вне его
+        window.addEventListener('click', function (event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target === modal) {
+                cancelDelete();
+            }
+        });
 
     </script>
 </body>

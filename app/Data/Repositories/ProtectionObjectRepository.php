@@ -3,7 +3,7 @@ namespace App\Data\Repositories;
 
 use App\Data\Entities\ProtectionObject;
 use App\Core\Repository;
-
+use DateTimeImmutable;
 class ProtectionObjectRepository extends Repository
 {
     protected $table = 'protection_objects';
@@ -31,7 +31,11 @@ class ProtectionObjectRepository extends Repository
         $object->curatorId = (int) $data['curator_id'];
         $object->inventoryNumber = $data['inventory_number'] ?? null;
         $object->notes = $data['notes'] ?? null;
-        $object->updatedAt = $data['updated_at'] ?? null;
+
+        // Преобразуем строку в DateTimeImmutable
+        $object->updatedAt = $data['updated_at'] ?
+            new DateTimeImmutable($data['updated_at']) : null;
+
         $object->updatedBy = $data['updated_by'] ? (int) $data['updated_by'] : null;
 
         return $object;
@@ -40,6 +44,7 @@ class ProtectionObjectRepository extends Repository
     protected function toArray(object $entity): array
     {
         return [
+            'object_id' => $entity->objectId,
             'record_uuid' => $entity->recordUuid,
             'branch_id' => $entity->branchId,
             'name' => $entity->name,
@@ -48,7 +53,7 @@ class ProtectionObjectRepository extends Repository
             'curator_id' => $entity->curatorId,
             'inventory_number' => $entity->inventoryNumber,
             'notes' => $entity->notes,
-            'updated_at' => $entity->updatedAt,
+            'updated_at' => $entity->updatedAt?->format('Y-m-d H:i:s'),
             'updated_by' => $entity->updatedBy
         ];
     }

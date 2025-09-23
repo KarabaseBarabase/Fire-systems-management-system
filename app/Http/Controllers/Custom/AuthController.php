@@ -46,7 +46,8 @@ class AuthController extends Controller
             //     ]);
             // }
 
-            if ($user && $credentials['password'] === $user['password_hash']) {
+            //if ($user && $credentials['password'] === $user['password_hash']) {
+            if ($user && password_verify($credentials['password'], $user['password_hash'])) {
                 $this->auth->login((object) $user);
                 return redirect()->route('dashboard');
             }

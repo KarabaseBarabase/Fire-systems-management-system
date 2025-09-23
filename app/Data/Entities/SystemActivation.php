@@ -10,18 +10,18 @@ class SystemActivation
     public string $recordUuid;
     public int $systemId;
     public ?string $location = null;
-    public \DateTimeImmutable $activationDate;
+    public ?\DateTimeImmutable $activationDate = null;
     public ?string $reportedBy = null;
     public ?string $notes = null;
-    public \DateTimeImmutable $updatedAt;
+    public ?\DateTimeImmutable $updatedAt = null;
     public ?int $updatedBy = null;
 
     public function __construct(
         int $systemActivationId,
         string $recordUuid,
         int $systemId,
-        \DateTimeImmutable $activationDate,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $activationDate = null,
+        ?\DateTimeImmutable $updatedAt = null,
         ?string $location = null,
         ?string $reportedBy = null,
         ?string $notes = null,

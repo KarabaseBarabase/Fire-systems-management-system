@@ -9,6 +9,25 @@ class ReferenceSeeder extends Seeder
 {
     public function run()
     {
+        // Заполнение ролей 
+        $roles = [
+            [1, 'view_all', 'Просмотр информации о состоянии систем всех филиалов'],
+            [2, 'view_branch_analytics', 'Просмотр аналитики по филиалу'],
+            [3, 'edit_branch', 'Редактирование данных по филиалу'],
+            [4, 'edit_all', 'Редактирование данных по всем филиалам'],
+            [5, 'confirm_repair_branch', 'Подтверждение ремонтных работ силами филиала'],
+            [6, 'confirm_repair_all', 'Подтверждение ремонтных работ по планам ДТОиР'],
+            [7, 'confirm_design_itc', 'Подтверждение проектирования СПКР ИТЦ'],
+            [8, 'confirm_design_all', 'Подтверждение проектирования по планам ДТОиР'],
+        ];
+
+        foreach ($roles as $role) {
+            DB::table('roles')->updateOrInsert(
+                ['role_id' => $role[0]],
+                ['name' => $role[1], 'description' => $role[2]]
+            );
+        }
+
         // Заполнение филиалов
         $branches = [
             [1, 'Администрация', 'АУП'],

@@ -13,8 +13,41 @@ class EquipmentRepository extends Repository
 
     public function findBySystem(int $systemId): array
     {
-        return $this->findBy(['system_id' => $systemId]);
+        try {
+            $sql = "SELECT e.*, et.name as equipment_type_name 
+                FROM equipments e 
+                LEFT JOIN equipment_types et ON e.type_id = et.type_id 
+                WHERE e.system_id = :system_id";
+
+            $stmt = $this->getPdo()->prepare($sql);
+            $stmt->execute(['system_id' => $systemId]);
+
+            // return array_map([$this, 'hydrate'], $data);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); // Только один вызов fetchAll()
+        } catch (PDOException $e) {
+            error_log("Error finding equipment for system {$systemId}: " . $e->getMessage());
+            return [];
+        }
     }
+
+    // public function findBySystemWithTypes(int $systemId): array
+    // {
+    //     try {
+    //         $sql = "SELECT e.*, et.name as equipment_type 
+    //             FROM equipments e 
+    //             LEFT JOIN equipment_types et ON e.type_id = et.type_id 
+    //             WHERE e.system_id = :system_id 
+    //             ORDER BY e.equipment_id";
+
+    //         $stmt = $this->getPdo()->prepare($sql);
+    //         $stmt->execute(['system_id' => $systemId]);
+
+    //         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    //     } catch (PDOException $e) {
+    //         error_log("Error finding equipment for system {$systemId}: " . $e->getMessage());
+    //         return [];
+    //     }
+    // }
 
     public function findByType(int $typeId): array
     {
@@ -36,6 +69,29 @@ class EquipmentRepository extends Repository
         }
     }
 
+    // protected function hydrateArray(array $data): array
+    // {
+    //     // Возвращаем массив с данными
+    //     return [
+    //         'equipment_id' => (int) $data['equipment_id'],
+    //         'system_id' => (int) $data['system_id'],
+    //         'type_id' => (int) $data['type_id'],
+    //         'model' => $data['model'],
+    //         'serial_number' => $data['serial_number'],
+    //         'location' => $data['location'],
+    //         'quantity' => (int) $data['quantity'],
+    //         'production_year' => (int) $data['production_year'],
+    //         'production_quarter' => $data['production_quarter'] ? (int) $data['production_quarter'] : null,
+    //         'service_life_years' => (int) $data['service_life_years'],
+    //         'control_period' => $data['control_period'],
+    //         'last_control_date' => $data['last_control_date'],
+    //         'control_result' => $data['control_result'],
+    //         'notes' => $data['notes'],
+    //         'updated_at' => $data['updated_at'],
+    //         'updated_by' => $data['updated_by'] ? (int) $data['updated_by'] : null,
+    //         'equipment_type_name' => $data['equipment_type_name'] // Добавляем название типа
+    //     ];
+    // }
     protected function hydrate(array $data): Equipment
     {
         return new Equipment(
@@ -55,7 +111,7 @@ class EquipmentRepository extends Repository
             $data['last_control_date'] ? new \DateTimeImmutable($data['last_control_date']) : null,
             $data['control_result'] ?? null,
             $data['notes'] ?? null,
-            $data['updated_by'] ? (int) $data['updated_by'] : null
+            $data['updated_by'] ? (int) $data['updated_by'] : null,
         );
     }
 

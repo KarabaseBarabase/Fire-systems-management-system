@@ -15,7 +15,7 @@ class ProtectionObject
     public int $curatorId;
     public ?string $inventoryNumber = null;
     public ?string $notes = null;
-    public \DateTimeImmutable $updatedAt;
+    public ?\DateTimeImmutable $updatedAt = null;
     public ?int $updatedBy = null;
 
     public function __construct(
@@ -28,7 +28,7 @@ class ProtectionObject
         ?string $shortName = null,
         ?string $inventoryNumber = null,
         ?string $notes = null,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $updatedAt = null,
         ?int $updatedBy = null
     ) {
         $this->objectId = $objectId;

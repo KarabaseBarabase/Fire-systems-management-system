@@ -31,11 +31,19 @@ class MountRepository extends Repository
         $mount->recordUuid = $data['record_uuid'];
         $mount->systemId = (int) $data['system_id'];
         $mount->installationOrgId = (int) $data['installation_org_id'];
-        $mount->commissionDate = $data['commission_date'];
+
+        // Преобразуем строку в DateTimeImmutable
+        $mount->commissionDate = $data['commission_date'] ?
+            new \DateTimeImmutable($data['commission_date']) : null;
+
         $mount->actFileLink = $data['act_file_link'];
         $mount->equipmentListFileLink = $data['equipment_list_file_link'] ?? null;
         $mount->status = $data['status'];
-        $mount->updatedAt = $data['updated_at'] ?? null;
+
+        // Также преобразуем updatedAt
+        $mount->updatedAt = $data['updated_at'] ?
+            new \DateTimeImmutable($data['updated_at']) : null;
+
         $mount->updatedBy = $data['updated_by'] ? (int) $data['updated_by'] : null;
         $mount->repairId = $data['repair_id'] ? (int) $data['repair_id'] : null;
         $mount->repairWorkType = $data['repair_work_type'] ?? null;
@@ -44,23 +52,6 @@ class MountRepository extends Repository
         return $mount;
     }
 
-    // protected function toArray(object $entity): array
-    // {
-    //     return [
-    //         'record_uuid' => $entity->recordUuid,
-    //         'system_id' => $entity->systemId,
-    //         'installation_org_id' => $entity->installationOrgId,
-    //         'commission_date' => $entity->commissionDate,
-    //         'act_file_link' => $entity->actFileLink,
-    //         'equipment_list_file_link' => $entity->equipmentListFileLink,
-    //         'status' => $entity->status,
-    //         'repair_id' => $entity->repairId,
-    //         'repair_work_type' => $entity->repairWorkType,
-    //         'repair_execution_method' => $entity->repairExecutionMethod,
-    //         'updated_at' => $entity->updatedAt,
-    //         'updated_by' => $entity->updatedBy
-    //     ];
-    // }
     protected function toArray(object $entity): array
     {
         if (!$entity instanceof Mount) {
@@ -70,7 +61,8 @@ class MountRepository extends Repository
         $data = [
             'system_id' => $entity->systemId,
             'installation_org_id' => $entity->installationOrgId,
-            'commission_date' => $entity->commissionDate->format('Y-m-d'),
+            'commission_date' => $entity->commissionDate ?
+                $entity->commissionDate->format('Y-m-d') : null,
             'act_file_link' => $entity->actFileLink,
             'equipment_list_file_link' => $entity->equipmentListFileLink,
             'status' => $entity->status,

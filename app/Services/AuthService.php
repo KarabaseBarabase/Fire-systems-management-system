@@ -67,24 +67,4 @@ class AuthService
     {
         $this->userRepository->updateLastActive($userId);
     }
-
-    /**
-     * Преобразует модель User в сущность User
-     */
-    // private function convertModelToEntity(\App\Models\User $model): User
-    // {
-    //     $entity = new User()::createEmpty();
-
-    //     // Копируем все свойства из модели в сущность
-    //     $entity->userId = $model->id;
-    //     $entity->username = $model->username;
-    //     $entity->passwordHash = $model->password;
-    //     $entity->email = $model->email;
-    //     $entity->createdAt = $model->created_at;
-    //     $entity->updatedAt = $model->updated_at;
-
-    //     // Добавьте остальные свойства по необходимости
-
-    //     return $entity;
-    // }
 }

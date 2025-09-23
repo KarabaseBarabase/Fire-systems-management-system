@@ -16,7 +16,7 @@ class NewProject
     public ?int $designOrgId = null;
     public ?string $projectCode = null;
     public ?string $projectFileLink = null;
-    public \DateTimeImmutable $updatedAt;
+    public ?\DateTimeImmutable $updatedAt = null;
     public ?int $updatedBy = null;
 
     public function __construct(
@@ -27,7 +27,7 @@ class NewProject
         int $regulationId,
         int $plannedYear,
         string $status,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $updatedAt = null,
         ?int $designOrgId = null,
         ?string $projectCode = null,
         ?string $projectFileLink = null,

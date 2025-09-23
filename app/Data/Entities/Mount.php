@@ -10,11 +10,11 @@ class Mount
     public string $recordUuid;
     public int $systemId;
     public int $installationOrgId;
-    public \DateTimeImmutable $commissionDate;
+    public ?\DateTimeImmutable $commissionDate = null;
     public string $actFileLink;
     public ?string $equipmentListFileLink = null;
     public string $status = 'ожидает проверки';
-    public \DateTimeImmutable $updatedAt;
+    public ?\DateTimeImmutable $updatedAt = null;
     public ?int $updatedBy = null;
     public ?int $repairId = null;
     public ?string $repairWorkType = null;
@@ -25,9 +25,9 @@ class Mount
         string $recordUuid,
         int $systemId,
         int $installationOrgId,
-        \DateTimeImmutable $commissionDate,
+        ?\DateTimeImmutable $commissionDate = null,
         string $actFileLink,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $updatedAt = null,
         ?string $equipmentListFileLink = null,
         string $status = 'ожидает проверки',
         ?int $updatedBy = null,

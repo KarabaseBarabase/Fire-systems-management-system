@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Custom\FireSystemController;
 use App\Http\Controllers\Custom\AuthController;
 use App\Http\Controllers\Custom\AnalyticsController;
@@ -16,11 +15,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Защищенные маршруты с middleware
-Route::middleware(['custom.auth'])->group(function () {
-    Route::get('/systems', [FireSystemController::class, 'list']);
-    Route::get('/systems/{id}', [FireSystemController::class, 'show']);
-    Route::get('/analytics', [AnalyticsController::class, 'index']);
-});
+//Route::middleware(['authenticated'])->group(function () {
+Route::get('/systems', [FireSystemController::class, 'list']);
+Route::get('/systems/{id}', [FireSystemController::class, 'show']);
+Route::delete('/systems/{uuid}', [FireSystemController::class, 'destroy'])->name('system.destroy');
+Route::get('/analytics', [AnalyticsController::class, 'index']);
+//});
 
 // Защищенные маршруты dashboard 
 Route::middleware([AuthMiddleware::class])->group(function () {

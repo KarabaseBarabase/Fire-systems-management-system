@@ -3,10 +3,11 @@ namespace App\Http\Controllers\Custom;
 
 use App\Services\FireSystemService;
 use App\Core\AuthInterface;
-
+use App\Data\Repositories;
 class FireSystemController
 {
     private $fireSystemService;
+    private $fireSystemRepository;
     private $auth;
 
     public function __construct(FireSystemService $fireSystemService, AuthInterface $auth)
@@ -36,7 +37,6 @@ class FireSystemController
             ];
         }
     }
-
     public function show($id)
     {
         if (!$this->auth->check()) {
@@ -44,114 +44,32 @@ class FireSystemController
         }
 
         try {
-            // Используем сервис для получения данных
             $fireSystemService = app(FireSystemService::class);
             $systemDetails = $fireSystemService->getSystemWithDetails($id);
 
             return view('systems.show', [
-                'system' => $systemDetails['system'], // Объект FireSystem
-                'object' => $systemDetails['object'], // Объект ProtectionObject
-                'equipment' => $systemDetails['equipment'], // Коллекция Equipment
+                'system' => $systemDetails['system'],
+                'object' => $systemDetails['object'],
+                'equipment' => $systemDetails['equipment'],
+                'repairs' => $systemDetails['repairs'],
+                'maintenance' => $systemDetails['maintenance'],
+                'activations' => $systemDetails['activations'],
+                'mounts' => $systemDetails['mounts'],
+                'projects' => $systemDetails['projects'], // Реализованные проекты
+                'branch' => $systemDetails['branch'],
+                'subtype' => $systemDetails['subtype'],
+                'system_type' => $systemDetails['system_type'],
                 'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
-                'userRole' => $this->auth->user()->position ?? 'Пользователь'
+                'userRole' => $this->auth->user()->position ?? 'Пользователь',
+                'documents' => $systemDetails['documents'],
+                'history' => $systemDetails['history'],
+                'plans' => $systemDetails['plans'] // Новые проекты
             ]);
 
         } catch (\Exception $e) {
             abort(500, 'Ошибка при загрузке системы: ' . $e->getMessage());
         }
     }
-    // public function show($id)
-    // {
-    //     if (!$this->auth->check()) {
-    //         return redirect('/login');
-    //     }
-
-    //     try {
-    //         // Простые данные для теста (замените на реальные из БД)
-    //         $system = [
-    //             'id' => $id,
-    //             'name' => 'Тестовая система ' . $id,
-    //             'type' => 'АУПТ',
-    //             'status' => 'Исправна',
-    //             'inventory_number' => 'INV-' . $id,
-    //             'branch_name' => 'ЛПУМГ',
-    //             'responsible_person' => 'Иванов И.И.',
-    //             'last_check_date' => '2024-01-15'
-    //         ];
-
-    //         return view('systems.show', [
-    //             'system' => $system,
-    //             'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
-    //             'userRole' => $this->auth->user()->position ?? 'Пользователь'
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         abort(500, 'Ошибка при загрузке системы');
-    //     }
-    // }
-
-
-    // public function show($params)
-    // {
-    //     if (!$this->auth->check()) {
-    //         return ['error' => 'Не авторизован'];
-    //     }
-
-    //     try {
-    //         $uuid = $params['uuid'] ?? null;
-    //         if (!$uuid) {
-    //             return [
-    //                 'success' => false,
-    //                 'error' => 'UUID системы не указан'
-    //             ];
-    //         }
-
-    //         $systemDetails = $this->fireSystemService->getSystemWithDetails($uuid);
-
-    //         return [
-    //             'success' => true,
-    //             'data' => $systemDetails
-    //         ];
-    //     } catch (\Exception $e) {
-    //         return [
-    //             'success' => false,
-    //             'error' => $e->getMessage()
-    //         ];
-    //     }
-    // }
-
-
-
-    // public function showPage($uuid)
-    // {
-    //     \Log::info('showPage called with UUID: ' . $uuid);
-
-    //     if (!$this->auth->check()) {
-    //         \Log::warning('User not authenticated');
-    //         return redirect('/login');
-    //     }
-
-    //     try {
-    //         $result = $this->show(['uuid' => $uuid]);
-    //         \Log::info('API result: ', $result);
-
-    //         if (!$result['success']) {
-    //             \Log::error('API error: ' . ($result['error'] ?? 'Unknown'));
-    //             abort(404, $result['error']);
-    //         }
-
-    //         return view('systems.show', [
-    //             'system' => $result['data'],
-    //             'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
-    //             'userRole' => $this->auth->user()->position ?? 'Пользователь'
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         \Log::error('showPage exception: ' . $e->getMessage());
-    //         \Log::error('Stack trace: ' . $e->getTraceAsString());
-    //         abort(500, 'Ошибка при загрузке системы');
-    //     }
-    // }
 
     /* Создать новую систему */
     public function store()
@@ -215,27 +133,47 @@ class FireSystemController
     }
 
     /* Удалить систему */
-    public function destroy($params)
+    public function destroy($uuid)
     {
-        if (!$this->auth->check()) {
-            return ['error' => 'Не авторизован'];
-        }
+        try {
+            \Log::info("Начало удаления системы", ['uuid' => $uuid]);
 
-        $uuid = $params['uuid'] ?? null;
-        if (!$uuid) {
-            return [
+            if (!$this->auth->check()) {
+                \Log::warning("Пользователь не авторизован");
+                return response()->json(['error' => 'Не авторизован'], 401);
+            }
+
+            if (!$uuid) {
+                \Log::warning("UUID не указан");
+                return response()->json([
+                    'success' => false,
+                    'error' => 'UUID системы не указан'
+                ], 400);
+            }
+
+            $result = $this->fireSystemService->deleteSystem($uuid);
+
+            $statusCode = $result['success'] ? 200 : 500;
+            \Log::info("Удаление завершено", [
+                'success' => $result['success'],
+                'status_code' => $statusCode
+            ]);
+
+            return response()->json($result, $statusCode);
+
+        } catch (\Exception $e) {
+            \Log::error("Ошибка при удалении системы", [
+                'uuid' => $uuid,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
                 'success' => false,
-                'error' => 'UUID системы не указан'
-            ];
+                'error' => 'Внутренняя ошибка сервера'
+            ], 500);
         }
-
-        // Здесь будет логика удаления системы
-        // Пока заглушка - в реальности нужно вызвать соответствующий метод сервиса
-
-        return [
-            'success' => true,
-            'message' => 'Система удалена'
-        ];
     }
 
     /* Получить системы по объекту */

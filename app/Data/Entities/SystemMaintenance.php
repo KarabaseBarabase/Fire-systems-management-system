@@ -10,12 +10,12 @@ class SystemMaintenance
     public string $recordUuid;
     public int $systemId;
     public string $maintenanceType;
-    public \DateTimeImmutable $maintenanceDate;
+    public ?\DateTimeImmutable $maintenanceDate = null;
     public ?string $maintenanceBy = null;
     public ?string $testActFileLink = null;
     public ?string $notes = null;
     public string $status = 'ожидает проверки';
-    public \DateTimeImmutable $updatedAt;
+    public ?\DateTimeImmutable $updatedAt = null;
     public ?int $updatedBy = null;
 
     public function __construct(
@@ -23,8 +23,8 @@ class SystemMaintenance
         string $recordUuid,
         int $systemId,
         string $maintenanceType,
-        \DateTimeImmutable $maintenanceDate,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $maintenanceDate = null,
+        ?\DateTimeImmutable $updatedAt = null,
         ?string $maintenanceBy = null,
         ?string $testActFileLink = null,
         ?string $notes = null,

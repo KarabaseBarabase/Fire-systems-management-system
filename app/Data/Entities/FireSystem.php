@@ -23,7 +23,7 @@ class FireSystem
         int $systemId,
         string $recordUuid,
         bool $isPartOfObject = false,
-        \DateTimeImmutable $updatedAt,
+        ?\DateTimeImmutable $updatedAt = null,
         ?int $objectId = null,
         ?int $subtypeId = null,
         ?string $systemInventoryNumber = null,

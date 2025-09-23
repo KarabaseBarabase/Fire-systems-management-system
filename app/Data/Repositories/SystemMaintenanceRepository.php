@@ -31,12 +31,20 @@ class SystemMaintenanceRepository extends Repository
         $maintenance->recordUuid = $data['record_uuid'];
         $maintenance->systemId = (int) $data['system_id'];
         $maintenance->maintenanceType = $data['maintenance_type'];
-        $maintenance->maintenanceDate = $data['maintenance_date'];
+
+        // Преобразуем строку в DateTimeImmutable
+        $maintenance->maintenanceDate = $data['maintenance_date'] ?
+            new \DateTimeImmutable($data['maintenance_date']) : null;
+
         $maintenance->maintenanceBy = $data['maintenance_by'] ?? null;
         $maintenance->testActFileLink = $data['test_act_file_link'] ?? null;
         $maintenance->notes = $data['notes'] ?? null;
         $maintenance->status = $data['status'];
-        $maintenance->updatedAt = $data['updated_at'] ?? null;
+
+        // Также преобразуем updatedAt
+        $maintenance->updatedAt = $data['updated_at'] ?
+            new \DateTimeImmutable($data['updated_at']) : null;
+
         $maintenance->updatedBy = $data['updated_by'] ? (int) $data['updated_by'] : null;
 
         return $maintenance;
@@ -48,12 +56,14 @@ class SystemMaintenanceRepository extends Repository
             'record_uuid' => $entity->recordUuid,
             'system_id' => $entity->systemId,
             'maintenance_type' => $entity->maintenanceType,
-            'maintenance_date' => $entity->maintenanceDate,
+            'maintenance_date' => $entity->maintenanceDate ?
+                $entity->maintenanceDate->format('Y-m-d') : null,
             'maintenance_by' => $entity->maintenanceBy,
             'test_act_file_link' => $entity->testActFileLink,
             'notes' => $entity->notes,
             'status' => $entity->status,
-            'updated_at' => $entity->updatedAt,
+            'updated_at' => $entity->updatedAt ?
+                $entity->updatedAt->format('Y-m-d H:i:s') : null,
             'updated_by' => $entity->updatedBy
         ];
     }

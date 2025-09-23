@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # PostgreSQL сервис
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: fsms_new
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d fsms_new" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PHP приложение
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=fsms_new
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+    command: >
+      sh -c "
+        until pg_isready -h postgres -p 5432; do
+          echo 'Waiting for PostgreSQL...'
+          sleep 2
+        done &&
+        php artisan migrate:fresh --force &&
+        php artisan db:seed --force &&
+        php artisan serve --host=0.0.0.0 --port=8000
+      "
