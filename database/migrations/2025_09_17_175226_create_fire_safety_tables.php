@@ -87,7 +87,8 @@ return new class extends Migration {
                 'заместитель начальника СПКР',
                 'заместитель начальника',
                 'ведущий инженер'
-            ]);
+            ])->charset('utf8mb4');
+            ;
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_active_at')->nullable();
             $table->timestamps();
