@@ -91,7 +91,7 @@ return [
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'WIN1251'),
+            'charset' => env('DB_CHARSET', 'UTF8'),
             'collation' => 'ru_RU.WIN1251',
             'prefix' => '',
             'prefix_indexes' => true,

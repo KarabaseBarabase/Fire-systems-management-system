@@ -8,6 +8,9 @@ services:
       POSTGRES_DB: fsms_new
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 lc_collate=C lc_ctype=C"
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     ports:
       - "5432:5432"
     volumes:
@@ -27,6 +30,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/var/www
+      - /var/www/vendor
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,3 +50,6 @@ services:
         php artisan db:seed --force &&
         php artisan serve --host=0.0.0.0 --port=8000
       "
+
+volumes:
+  postgres_data:
