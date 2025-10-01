@@ -1,0 +1,2 @@
+ALTER USER postgres WITH PASSWORD 'postgres';
+GRANT ALL PRIVILEGES ON DATABASE fsms_new TO postgres;
