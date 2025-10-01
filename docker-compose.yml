@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # PostgreSQL сервис
@@ -7,15 +7,15 @@ services:
     environment:
       POSTGRES_DB: fsms_new
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc_collate=C --lc_ctype=C"
-      LANG: C.UTF-8
-      LC_ALL: C.UTF-8
+      POSTGRES_PASSWORD: sgK2Jyx7
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      # LANG: C.UTF-8
+      # LC_ALL: C.UTF-8
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     # healthcheck:
     #   test: [ "CMD-SHELL", "pg_isready -U postgres -d fsms_new" ]
     #   interval: 10s
@@ -38,14 +38,13 @@ services:
       - DB_PORT=5432
       - DB_DATABASE=fsms_new
       - DB_USERNAME=postgres
-      - DB_PASSWORD=password
+      - DB_PASSWORD=sgK2Jyx7
     command: >
       sh -c "
-        until pg_isready -h postgres -p 5432; do
+        until PGPASSWORD=sgK2Jyx7 pg_isready -h postgres -p 5432 -U postgres -d fsms_new -t 1; do
           echo 'Waiting for PostgreSQL...'
           sleep 2
         done &&
-        composer install --no-dev --optimize-autoloader &&
         php artisan migrate:fresh --force &&
         php artisan db:seed --force &&
         php artisan serve --host=0.0.0.0 --port=8000

@@ -1,2 +1,2 @@
-ALTER USER postgres WITH PASSWORD 'postgres';
+ALTER USER postgres WITH PASSWORD 'sgK2Jyx7';
 GRANT ALL PRIVILEGES ON DATABASE fsms_new TO postgres;
