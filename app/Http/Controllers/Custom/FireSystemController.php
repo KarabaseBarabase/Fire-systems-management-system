@@ -3,17 +3,19 @@ namespace App\Http\Controllers\Custom;
 
 use App\Services\FireSystemService;
 use App\Core\AuthInterface;
-use App\Data\Repositories;
+use App\Core\Database;
 class FireSystemController
 {
     private $fireSystemService;
     private $fireSystemRepository;
     private $auth;
+    private $database;
 
-    public function __construct(FireSystemService $fireSystemService, AuthInterface $auth)
+    public function __construct(FireSystemService $fireSystemService, AuthInterface $auth, Database $database, )
     {
         $this->fireSystemService = $fireSystemService;
         $this->auth = $auth;
+        $this->database = $database;
     }
 
     /* Получить все системы пожаротушения */
@@ -101,37 +103,39 @@ class FireSystemController
     }
 
     /* Обновить систему */
-    public function update($params)
+    public function update($id)
     {
         if (!$this->auth->check()) {
-            return ['error' => 'Не авторизован'];
+            return response()->json(['error' => 'Не авторизован'], 401);
         }
 
+        $user = $this->auth->user();
+        $userId = $user->user_id;
+
+        error_log("Authenticated user ID: " . $userId);
+        error_log("User object: " . json_encode($user));
+
+        // ПРОВЕРКА: Устанавливаем ли мы правильного пользователя?
+        $this->database->setCurrentUserId($userId);
+
+        // Дополнительная проверка: что БД видит как current_user_id
         try {
-            $uuid = $params['uuid'] ?? null;
-            if (!$uuid) {
-                return [
-                    'success' => false,
-                    'error' => 'UUID системы не указан'
-                ];
-            }
-
-            $request = $_POST; // или json_decode(file_get_contents('php://input'), true)
-            $system = $this->fireSystemService->updateSystem($uuid, $request);
-
-            return [
-                'success' => true,
-                'message' => 'Система успешно обновлена',
-                'data' => $system
-            ];
+            $currentUser = $this->database->fetch("SELECT current_setting('app.current_user_id', true) as current_user");
+            error_log("DB current_user_id setting: " . ($currentUser['current_user'] ?? 'NOT SET'));
         } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+            error_log("Failed to get current_user_id: " . $e->getMessage());
         }
-    }
 
+        $requestData = request()->all();
+        $system = $this->fireSystemService->updateSystem($id, $requestData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Система успешно обновлена',
+            'data' => $system,
+            'redirect' => route('system.show', $system->systemId)
+        ]);
+    }
     /* Удалить систему */
     public function destroy($uuid)
     {

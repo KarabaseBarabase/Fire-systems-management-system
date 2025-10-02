@@ -11,8 +11,6 @@ class SessionAuth implements AuthInterface
     {
         $this->sessionName = $sessionName ?? $_ENV['SESSION_NAME'] ?? 'app_session';
         $this->sessionLifetime = $sessionLifetime ?? $_ENV['SESSION_LIFETIME'] ?? 3600;
-
-        // Убрали вызов startSession() из конструктора
     }
 
     /* Запуск сессии с настройками безопасности */

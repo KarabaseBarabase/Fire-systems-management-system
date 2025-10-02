@@ -35,7 +35,8 @@ class AuthMiddleware
             return redirect()->route('login');
         }
 
-        // Устанавливаем контекст пользователя в БД
+        // Устанавливаем контекст пользователя в БД ТОЛЬКО для не-GET запросов
+        // или для запросов, которые действительно нуждаются в установке пользователя
         if ($userId = $this->auth->getUserId()) {
             // Установка app.current_user_id в PostgreSQL
             $this->database->setCurrentUserId($userId);

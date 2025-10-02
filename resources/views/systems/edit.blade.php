@@ -46,31 +46,30 @@
                         <h2 class="form-title">
                             {{ isset($system) ? 'Редактирование системы' : 'Добавление новой системы' }}
                         </h2>
+                    </div>
+
+                    <form id="systemForm" 
+                        action="{{ isset($system) ? route('system.update', $system->systemId) : route('system.create') }}" 
+                        method="POST">
+                        @csrf
+                        @if(isset($system))
+                            @method('PUT')
+                        @endif
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" 
                                 onclick="window.history.back()">
                                 Отмена
                             </button>
-                            <button type="submit" form="systemForm" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary">
                                 Сохранить
                             </button>
                             @if(isset($system))
                             <button type="button" class="btn btn-danger" 
-                                onclick="confirmDelete('{{ $system->recordUuid }}', '{{ $system->name }}')">
+                                onclick="confirmDelete('{{ $system->systemId }}', '{{ $system->name }}')">
                                 Удалить
                             </button>
                             @endif
                         </div>
-                    </div>
-
-                    <form id="systemForm" 
-                          action="{{ isset($system) ? route('system.update', $system->recordUuid) : route('system.create') }}" 
-                          method="POST">
-                        @csrf
-                        @if(isset($system))
-                            @method('PUT')
-                        @endif
-
                         <!-- FireSystem: Основная информация -->
                         <div class="form-section">
                             <h3 class="section-title">Основная информация системы</h3>
@@ -117,10 +116,10 @@
                                     </label>
                                     <input type="text" 
                                            id="systemInventoryNumber" 
-                                           name="systemInventoryNumber" 
+                                           name="system_inventory_number" 
                                            class="form-input" 
-                                           value="{{ old('systemInventoryNumber', $system->systemInventoryNumber ?? '') }}">
-                                    @error('systemInventoryNumber')
+                                           value="{{ old('system_inventory_number', $system->systemInventoryNumber ?? '') }}">
+                                    @error('system_inventory_number')
                                         <div class="error-message">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -518,24 +517,74 @@
             }
         }
 
-        // Валидация формы
+        // Обработка отправки формы через AJAX
         document.getElementById('systemForm').addEventListener('submit', function(e) {
-            const requiredFields = this.querySelectorAll('[required]');
-            let isValid = true;
-
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    isValid = false;
-                    field.style.borderColor = '#e74c3c';
+            e.preventDefault(); // Предотвращаем стандартную отправку
+            
+            const form = this;
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            
+            // Показываем загрузку
+            submitButton.disabled = true;
+            submitButton.textContent = 'Сохранение...';
+            
+            // Собираем данные формы
+            const formData = new FormData(form);
+            const jsonData = {};
+            
+            // Конвертируем FormData в JSON
+            for (let [key, value] of formData.entries()) {
+                // Особенная обработка для чекбоксов
+                if (key === 'isPartOfObject') {
+                    jsonData[key] = true; // Если чекбокс отмечен, он попадает в FormData
                 } else {
-                    field.style.borderColor = '#bdc3c7';
+                    jsonData[key] = value;
                 }
-            });
-
-            if (!isValid) {
-                e.preventDefault();
-                alert('Пожалуйста, заполните все обязательные поля');
             }
+            
+            // Если чекбокс не отмечен, явно устанавливаем false
+            if (!formData.has('isPartOfObject')) {
+                jsonData['isPartOfObject'] = false;
+            }
+            
+            console.log('Sending data:', jsonData);
+            
+            // Отправляем AJAX запрос
+            fetch(form.action, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    // Успешное сохранение - редирект на главную
+                    alert(data.message || 'Система успешно обновлена');
+                    window.location.href = '/systems';
+                } else {
+                    // Ошибка
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при сохранении: ' + error.message);
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            });
         });
 
         // Управление видимостью секции объекта

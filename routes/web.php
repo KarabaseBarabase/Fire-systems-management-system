@@ -14,16 +14,18 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
 // Защищенные маршруты с middleware
-//Route::middleware(['authenticated'])->group(function () {
-Route::get('/systems', [FireSystemController::class, 'list']);
-Route::get('/systems/{id}', [FireSystemController::class, 'show']);
-Route::delete('/systems/{uuid}', [FireSystemController::class, 'destroy'])->name('system.destroy');
-Route::get('/analytics', [AnalyticsController::class, 'index']);
-Route::get('/systems/create', [FireSystemController::class, 'create'])->name('system.create');
-Route::get('/systems/{id}/edit', [FireSystemController::class, 'edit'])->name('system.edit');
-Route::put('/systems/{uuid}', [FireSystemController::class, 'update'])->name('system.update');
-//});
+Route::middleware(['auth.custom'])->group(function () {
+    Route::get('/systems', function () {
+        return redirect('/'); });
+    Route::get('/system/{id}', [FireSystemController::class, 'show'])->name('system.show');
+    Route::delete('/systems/{uuid}', [FireSystemController::class, 'destroy'])->name('system.destroy');
+    Route::get('/analytics', [AnalyticsController::class, 'index']);
+    Route::get('/systems/create', [FireSystemController::class, 'create'])->name('system.create');
+    Route::get('/systems/{id}/edit', [FireSystemController::class, 'edit'])->name('system.edit');
+    Route::put('/systems/{id}', [FireSystemController::class, 'update'])->name('system.update');
+});
 
 // Защищенные маршруты dashboard 
 Route::middleware([AuthMiddleware::class])->group(function () {
@@ -31,4 +33,3 @@ Route::middleware([AuthMiddleware::class])->group(function () {
     Route::get('/modal/{id}', [DashboardController::class, 'modal'])->name('modal');
 });
 
-Route::get('/system/{id}', [FireSystemController::class, 'show'])->name('system.show');

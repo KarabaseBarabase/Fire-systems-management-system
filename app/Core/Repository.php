@@ -160,16 +160,28 @@ abstract class Repository
     public function save(object $entity): object
     {
         try {
+            error_log("=== SAVE METHOD START ===");
             $data = $this->toArray($entity);
+            error_log("Data to save: " . json_encode($data));
+
             $primaryKeyValue = $data[$this->primaryKey] ?? null;
+            error_log("Primary key value: " . ($primaryKeyValue ?? 'NULL'));
 
             if ($primaryKeyValue) {
+                error_log("Performing UPDATE");
                 $this->update($data);
-                return $this->find($primaryKeyValue);
+                $result = $this->find($primaryKeyValue);
+                error_log("Update completed, result: " . json_encode($result));
             } else {
+                error_log("Performing INSERT");
                 $id = $this->insert($data);
-                return $this->find($id);
+                $result = $this->find($id);
+                error_log("Insert completed, ID: " . $id);
             }
+
+            error_log("=== SAVE METHOD END ===");
+            return $result;
+
         } catch (PDOException $e) {
             error_log("Error saving {$this->table}: " . $e->getMessage());
             throw $e;
@@ -185,20 +197,33 @@ abstract class Repository
         $placeholders = array_map(fn($col) => ":{$col}", $columns);
 
         $sql = "INSERT INTO {$this->table} (" . implode(', ', $columns) . ") 
-                VALUES (" . implode(', ', $placeholders) . ") 
-                RETURNING {$this->primaryKey}";
+            VALUES (" . implode(', ', $placeholders) . ") 
+            RETURNING {$this->primaryKey}";
 
         $stmt = $this->getPdo()->prepare($sql);
-        $stmt->execute($data);
 
+        // Привязываем параметры с явным указанием типов
+        foreach ($data as $column => $value) {
+            if (is_bool($value)) {
+                $stmt->bindValue(":{$column}", $value, PDO::PARAM_BOOL);
+            } else {
+                $stmt->bindValue(":{$column}", $value);
+            }
+        }
+
+        $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int) $result[$this->primaryKey];
     }
 
     protected function update(array $data): bool
     {
+        error_log("=== UPDATE METHOD START ===");
         $id = $data[$this->primaryKey];
         unset($data[$this->primaryKey]);
+
+        error_log("Updating record ID: " . $id);
+        error_log("Update data: " . json_encode($data));
 
         $set = [];
         foreach ($data as $column => $value) {
@@ -206,9 +231,30 @@ abstract class Repository
         }
 
         $sql = "UPDATE {$this->table} SET " . implode(', ', $set) . " WHERE {$this->primaryKey} = :id";
-        $data['id'] = $id;
+        error_log("SQL: " . $sql);
 
         $stmt = $this->getPdo()->prepare($sql);
-        return $stmt->execute($data);
+
+        // Привязываем параметры с явным указанием типов
+        foreach ($data as $column => $value) {
+            if (is_bool($value)) {
+                $stmt->bindValue(":{$column}", $value, PDO::PARAM_BOOL);
+                error_log("Binding boolean: {$column} = " . ($value ? 'true' : 'false'));
+            } else {
+                $stmt->bindValue(":{$column}", $value);
+                error_log("Binding: {$column} = " . $value);
+            }
+        }
+        $stmt->bindValue(':id', $id);
+        error_log("Binding ID: " . $id);
+
+        $result = $stmt->execute();
+        $rowCount = $stmt->rowCount();
+
+        error_log("Execute result: " . ($result ? 'true' : 'false'));
+        error_log("Rows affected: " . $rowCount);
+        error_log("=== UPDATE METHOD END ===");
+
+        return $result;
     }
 }

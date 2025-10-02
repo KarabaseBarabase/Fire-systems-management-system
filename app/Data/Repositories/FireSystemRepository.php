@@ -60,13 +60,12 @@ class FireSystemRepository extends Repository
         $data = [
             'object_id' => $entity->objectId,
             'subtype_id' => $entity->subtypeId,
-            'is_part_of_object' => $entity->isPartOfObject,
+            'is_part_of_object' => (bool) $entity->isPartOfObject,
             'system_inventory_number' => $entity->systemInventoryNumber,
             'name' => $entity->name,
             'manual_file_link' => $entity->manualFileLink,
             'maintenance_schedule_file_link' => $entity->maintenanceScheduleFileLink,
             'test_program_file_link' => $entity->testProgramFileLink,
-            // Исправленная строка - проверяем на null
             'updated_at' => $entity->updatedAt ? $entity->updatedAt->format('Y-m-d H:i:s') : null,
             'updated_by' => $entity->updatedBy
         ];

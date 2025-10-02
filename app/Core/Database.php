@@ -39,29 +39,33 @@ class Database
     }
 
     /* Устанавливает идентификатор текущего пользователя для PostgreSQL сессии */
-    public function setCurrentUserId(int $userId): bool
-    {
-        try {
-            // $1 - это плейсхолдер, который будет заменен на значение из массива
-            $stmt = $this->pdo->prepare("SET app.current_user_id = $1");
-
-            return $stmt->execute([$userId]);
-        } catch (PDOException $e) {
-            error_log("Failed to set current user ID: " . $e->getMessage());
-            return false;
-        }
-    }
     // public function setCurrentUserId(int $userId): bool
     // {
     //     try {
-    //         $stmt = $this->pdo->prepare("SET app.current_user_id = :user_id");
-    //         return $stmt->execute(['user_id' => $userId]);
+    //         $stmt = $this->pdo->prepare("SET app.current_user_id = $1");
+
+    //         return $stmt->execute([$userId]);
     //     } catch (PDOException $e) {
     //         error_log("Failed to set current user ID: " . $e->getMessage());
     //         return false;
     //     }
     // }
+    public function setCurrentUserId(int $userId): void
+    {
+        try {
+            $sql = "SET app.current_user_id = " . (int) $userId;
+            $this->getPdo()->exec($sql);
 
+            $checkSql = "SELECT current_setting('app.current_user_id', true) as user_id";
+            $result = $this->fetch($checkSql);
+
+            error_log("Successfully set current user ID to: " . $userId . ", DB confirms: " . ($result['user_id'] ?? 'NULL'));
+
+        } catch (PDOException $e) {
+            error_log("Failed to set current user ID: " . $e->getMessage());
+            throw $e;
+        }
+    }
     /* Начинает транзакцию с поддержкой вложенных транзакций */
     public function beginTransaction(): bool
     {

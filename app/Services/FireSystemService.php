@@ -22,9 +22,12 @@ use App\Data\Repositories\{
     InstallationOrganizationRepository,
     ObjectGroupRepository
 };
+
 use App\Data\Entities\FireSystem;
 use Illuminate\Support\Facades\Log;
 use DB;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Auth\StatefulGuard;
 
 class FireSystemService
 {
@@ -47,8 +50,9 @@ class FireSystemService
     private $curatorRepo;
     private $designOrganizationRepo;
     private $installationOrganizationRepo;
-
     private $objectGroupRepo;
+
+    private $auth;
 
     public function __construct(
         FireSystemRepository $fireSystemRepo,
@@ -70,7 +74,9 @@ class FireSystemService
         CuratorRepository $curatorRepo = null,
         DesignOrganizationRepository $designOrganizationRepo = null,
         InstallationOrganizationRepository $installationOrganizationRepo = null,
-        ObjectGroupRepository $objectGroupRepo = null
+        ObjectGroupRepository $objectGroupRepo = null,
+
+        Guard $auth
     ) {
         $this->fireSystemRepo = $fireSystemRepo;
         $this->protectionObjectRepo = $protectionObjectRepo;
@@ -92,6 +98,8 @@ class FireSystemService
         $this->designOrganizationRepo = $designOrganizationRepo;
         $this->installationOrganizationRepo = $installationOrganizationRepo;
         $this->objectGroupRepo = $objectGroupRepo;
+
+        $this->auth = $auth;
     }
 
 
@@ -117,20 +125,28 @@ class FireSystemService
         return $this->fireSystemRepo->save($fireSystem);
     }
 
-    public function updateSystem(string $uuid, array $data): FireSystem
+    public function updateSystem(string $id, array $data): FireSystem
     {
-        $system = $this->fireSystemRepo->findByUuid($uuid);
+        $system = $this->fireSystemRepo->find($id);
         if (!$system) {
             throw new \Exception('Система не найдена');
         }
+
+        error_log("Updating system ID: " . $id . ", Record UUID: " . ($system->recordUuid ?? 'no UUID'));
 
         // Обновляем свойства системы
         if (isset($data['object_id']))
             $system->objectId = $data['object_id'];
         if (isset($data['subtype_id']))
             $system->subtypeId = $data['subtype_id'];
-        if (isset($data['is_part_of_object']))
-            $system->isPartOfObject = $data['is_part_of_object'];
+
+        // Исправляем обработку boolean поля
+        if (isset($data['is_part_of_object'])) {
+            $system->isPartOfObject = (bool) $data['is_part_of_object'];
+        } else {
+            $system->isPartOfObject = false; // если чекбокс не отмечен
+        }
+
         if (isset($data['system_inventory_number']))
             $system->systemInventoryNumber = $data['system_inventory_number'];
         if (isset($data['name']))
