@@ -104,7 +104,7 @@
                                             Просмотр
                                         </button>
                                         <button class="btn-edit" data-role="engineer"
-                                            onclick="editSystem(<?= $system['id'] ?>)">
+                                            onclick="window.location.href='{{ route('system.edit', $system['id']) }}'">
                                             Ред.
                                         </button>
                                         <button class="btn-delete"

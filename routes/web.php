@@ -20,6 +20,9 @@ Route::get('/systems', [FireSystemController::class, 'list']);
 Route::get('/systems/{id}', [FireSystemController::class, 'show']);
 Route::delete('/systems/{uuid}', [FireSystemController::class, 'destroy'])->name('system.destroy');
 Route::get('/analytics', [AnalyticsController::class, 'index']);
+Route::get('/systems/create', [FireSystemController::class, 'create'])->name('system.create');
+Route::get('/systems/{id}/edit', [FireSystemController::class, 'edit'])->name('system.edit');
+Route::put('/systems/{uuid}', [FireSystemController::class, 'update'])->name('system.update');
 //});
 
 // Защищенные маршруты dashboard 

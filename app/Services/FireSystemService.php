@@ -1,20 +1,27 @@
 <?php
 namespace App\Services;
 
-use App\Data\Repositories\FireSystemRepository;
-use App\Data\Repositories\ProtectionObjectRepository;
-use App\Data\Repositories\EquipmentRepository;
-use App\Data\Repositories\RepairRepository;
-use App\Data\Repositories\SystemMaintenanceRepository;
-use App\Data\Repositories\SystemActivationRepository;
-use App\Data\Repositories\MountRepository;
-use App\Data\Repositories\NewProjectRepository;
-use App\Data\Repositories\BranchRepository;
-use App\Data\Repositories\SystemSubtypeRepository;
-use App\Data\Repositories\SystemTypeRepository;
-use App\Data\Repositories\RegulationRepository;
-use App\Data\Repositories\ChangeLogRepository;
-use App\Data\Repositories\ApprovalHistoryRepository;
+use App\Data\Repositories\{
+    FireSystemRepository,
+    ProtectionObjectRepository,
+    EquipmentRepository,
+    EquipmentTypeRepository,
+    RepairRepository,
+    SystemMaintenanceRepository,
+    SystemActivationRepository,
+    MountRepository,
+    NewProjectRepository,
+    BranchRepository,
+    SystemSubtypeRepository,
+    SystemTypeRepository,
+    RegulationRepository,
+    ChangeLogRepository,
+    ApprovalHistoryRepository,
+    CuratorRepository,
+    DesignOrganizationRepository,
+    InstallationOrganizationRepository,
+    ObjectGroupRepository
+};
 use App\Data\Entities\FireSystem;
 use Illuminate\Support\Facades\Log;
 use DB;
@@ -24,6 +31,7 @@ class FireSystemService
     private $fireSystemRepo;
     private $protectionObjectRepo;
     private $equipmentRepo;
+    private $equipmentTypeRepo;
     private $repairRepo;
     private $maintenanceRepo;
     private $activationRepo;
@@ -36,11 +44,17 @@ class FireSystemService
     private $changeLogRepo;
     private $newProjectRepo;
     private $approvalHistoryRepo;
+    private $curatorRepo;
+    private $designOrganizationRepo;
+    private $installationOrganizationRepo;
+
+    private $objectGroupRepo;
 
     public function __construct(
         FireSystemRepository $fireSystemRepo,
         ProtectionObjectRepository $protectionObjectRepo,
         EquipmentRepository $equipmentRepo,
+        EquipmentTypeRepository $equipmentTypeRepo,
         RepairRepository $repairRepo,
         SystemMaintenanceRepository $maintenanceRepo,
         SystemActivationRepository $activationRepo,
@@ -51,11 +65,17 @@ class FireSystemService
         SystemTypeRepository $systemTypeRepo,
         RegulationRepository $regulationRepo,
         ChangeLogRepository $changeLogRepo,
-        NewProjectRepository $newProjectRepo
+        NewProjectRepository $newProjectRepo,
+        ApprovalHistoryRepository $approvalHistoryRepo = null,
+        CuratorRepository $curatorRepo = null,
+        DesignOrganizationRepository $designOrganizationRepo = null,
+        InstallationOrganizationRepository $installationOrganizationRepo = null,
+        ObjectGroupRepository $objectGroupRepo = null
     ) {
         $this->fireSystemRepo = $fireSystemRepo;
         $this->protectionObjectRepo = $protectionObjectRepo;
         $this->equipmentRepo = $equipmentRepo;
+        $this->equipmentTypeRepo = $equipmentTypeRepo;
         $this->repairRepo = $repairRepo;
         $this->maintenanceRepo = $maintenanceRepo;
         $this->activationRepo = $activationRepo;
@@ -67,6 +87,11 @@ class FireSystemService
         $this->regulationRepo = $regulationRepo;
         $this->changeLogRepo = $changeLogRepo;
         $this->newProjectRepo = $newProjectRepo;
+        $this->approvalHistoryRepo = $approvalHistoryRepo;
+        $this->curatorRepo = $curatorRepo;
+        $this->designOrganizationRepo = $designOrganizationRepo;
+        $this->installationOrganizationRepo = $installationOrganizationRepo;
+        $this->objectGroupRepo = $objectGroupRepo;
     }
 
 
@@ -428,6 +453,43 @@ class FireSystemService
             ]);
 
             return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Получить все данные для формы редактирования/создания системы
+     */
+    /**
+     * Получить все данные для формы редактирования/создания системы
+     */
+    public function getFormData($identifier = null): array
+    {
+        try {
+            // Все через репозитории - консистентно!
+            $formData = [
+                'branches' => $this->branchRepo->findAll(),
+                'systemTypes' => $this->systemTypeRepo->findAll(),
+                'systemSubtypes' => $this->subtypeRepo->findAll(),
+                'protectionObjects' => $this->protectionObjectRepo->findAll(),
+                'equipmentTypes' => $this->equipmentTypeRepo->findAll(),
+                'curators' => $this->curatorRepo ? $this->curatorRepo->findAll() : [],
+                'designOrganizations' => $this->designOrganizationRepo ? $this->designOrganizationRepo->findAll() : [],
+                'installationOrganizations' => $this->installationOrganizationRepo ? $this->installationOrganizationRepo->findAll() : [],
+                'regulations' => $this->regulationRepo->findAll(),
+                'objectGroups' => $this->objectGroupRepo ? $this->objectGroupRepo->findAll() : [],
+            ];
+
+            // Если передан идентификатор - получаем данные конкретной системы
+            if ($identifier) {
+                $systemDetails = $this->getSystemWithDetails($identifier);
+                $formData = array_merge($formData, $systemDetails);
+            }
+
+            return $formData;
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка при получении данных формы: ' . $e->getMessage());
+            throw $e;
         }
     }
 }

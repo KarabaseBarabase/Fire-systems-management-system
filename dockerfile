@@ -24,8 +24,6 @@ COPY . .
 # Установка прав 
 RUN chmod -R 775 storage bootstrap/cache
 
-# Кэширующий слой - копируем только composer файлы сначала
-COPY composer.json composer.lock ./
 # Установка зависимостей Composer
 RUN composer install --no-dev --optimize-autoloader
 

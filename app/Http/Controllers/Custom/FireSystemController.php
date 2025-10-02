@@ -200,5 +200,25 @@ class FireSystemController
         ];
     }
 
+    public function edit($id)
+    {
+        // Проверка авторизации
+        if (!$this->auth->check()) {
+            return redirect('/login');
+        }
 
+        try {
+            // Получение данных через сервис
+            $formData = $this->fireSystemService->getFormData($id);
+
+            // Рендеринг Blade шаблона
+            return view('systems.edit', array_merge($formData, [
+                'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
+                'userRole' => $this->auth->user()->position ?? 'Пользователь'
+            ]));
+
+        } catch (\Exception $e) {
+            abort(500, 'Ошибка при загрузке формы редактирования');
+        }
+    }
 }

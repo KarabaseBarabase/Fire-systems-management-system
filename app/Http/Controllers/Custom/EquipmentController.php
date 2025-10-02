@@ -12,7 +12,7 @@ class EquipmentController extends Controller
 
     public function __construct(Database $db, AuthInterface $auth, EquipmentService $equipmentService)
     {
-        parent::__construct($db, $auth); // Вызываем родительский конструктор
+        parent::__construct($db, $auth);
         $this->equipmentService = $equipmentService;
     }
 
