@@ -182,56 +182,100 @@ class FireSystemService
 
     public function getSystemWithDetails($identifier): array
     {
-        if (is_numeric($identifier)) {
-            $system = $this->fireSystemRepo->find($identifier);
-        } else {
-            $system = $this->fireSystemRepo->findByUuid($identifier);
+        try {
+            Log::channel('business')->info('Getting system with details', [
+                'identifier' => $identifier,
+                'identifier_type' => is_numeric($identifier) ? 'numeric_id' : 'uuid'
+            ]);
+
+            // Поиск системы
+            if (is_numeric($identifier)) {
+                $system = $this->fireSystemRepo->find($identifier);
+                Log::channel('debug')->debug('Searching system by ID', ['id' => $identifier]);
+            } else {
+                $system = $this->fireSystemRepo->findByUuid($identifier);
+                Log::channel('debug')->debug('Searching system by UUID', ['uuid' => $identifier]);
+            }
+
+            if (!$system) {
+                Log::channel('errors')->warning('System not found', [
+                    'identifier' => $identifier,
+                    'search_type' => is_numeric($identifier) ? 'id' : 'uuid'
+                ]);
+                throw new \Exception('Система не найдена');
+            }
+
+            Log::channel('business')->info('System found', [
+                'system_id' => $system->systemId,
+                'object_id' => $system->objectId,
+                'subtype_id' => $system->subtypeId
+            ]);
+
+            // Получение связанных данных
+            $object = $system->objectId ? $this->protectionObjectRepo->find($system->objectId) : null;
+            Log::channel('debug')->debug('Object lookup result', [
+                'object_id' => $system->objectId,
+                'object_found' => !is_null($object),
+                'object_branch_id' => $object ? $object->branchId : null
+            ]);
+
+            $subtype = $system->subtypeId ? $this->subtypeRepo->find($system->subtypeId) : null;
+            Log::channel('debug')->debug('Subtype lookup result', [
+                'subtype_id' => $system->subtypeId,
+                'subtype_found' => !is_null($subtype),
+                'subtype_type_id' => $subtype ? $subtype->typeId : null
+            ]);
+
+            // Получение дополнительных данных
+            $branch = $object ? $this->getBranch($object->branchId) : null;
+            $systemType = $subtype ? $this->getSystemType($subtype->typeId) : null;
+
+            Log::channel('debug')->debug('Additional data lookup', [
+                'branch_found' => !is_null($branch),
+                'system_type_found' => !is_null($systemType)
+            ]);
+
+            // Сбор всех данных системы
+            Log::channel('business')->info('Collecting system details', ['system_id' => $system->systemId]);
+
+            $details = [
+                'system' => $system,
+                'object' => $object,
+                'equipment' => $this->getEquipment($system->systemId),
+                'repairs' => $this->getRepairs($system->systemId),
+                'maintenance' => $this->getMaintenance($system->systemId),
+                'activations' => $this->getActivations($system->systemId),
+                'mounts' => $this->getMounts($system->systemId),
+                'projects' => $this->getProjects($system->systemId),
+                'branch' => $branch,
+                'subtype' => $subtype,
+                'system_type' => $systemType,
+                'documents' => $this->getRegulations(),
+                'history' => $this->getSystemHistory($system),
+                'plans' => $this->getNewProjects($system->systemId)
+            ];
+
+            // Логируем успешное завершение
+            Log::channel('business')->info('System details collected successfully', [
+                'system_id' => $system->systemId,
+                'details_count' => count($details),
+                'has_equipment' => !empty($details['equipment']),
+                'has_repairs' => !empty($details['repairs']),
+                'has_maintenance' => !empty($details['maintenance'])
+            ]);
+
+            return $details;
+
+        } catch (\Exception $e) {
+            Log::channel('errors')->error('Error getting system details', [
+                'identifier' => $identifier,
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+
+            throw $e;
         }
-
-        if (!$system) {
-            throw new \Exception('Система не найдена');
-        }
-
-        // Отладочная информация
-        error_log("=== SYSTEM DEBUG ===");
-        error_log("System ID: " . $system->systemId);
-        error_log("Object ID: " . $system->objectId);
-        error_log("Subtype ID: " . $system->subtypeId);
-
-        $object = $system->objectId ? $this->protectionObjectRepo->find($system->objectId) : null;
-        error_log("Object found: " . ($object ? 'YES' : 'NO'));
-        if ($object) {
-            error_log("Object branchId: " . $object->branchId);
-        }
-
-        $subtype = $system->subtypeId ? $this->subtypeRepo->find($system->subtypeId) : null;
-        error_log("Subtype found: " . ($subtype ? 'YES' : 'NO'));
-        if ($subtype) {
-            error_log("Subtype typeId: " . $subtype->typeId);
-        }
-
-        $branch = $object ? $this->getBranch($object->branchId) : null;
-        error_log("Branch found: " . ($branch ? 'YES' : 'NO'));
-
-        $systemType = $subtype ? $this->getSystemType($subtype->typeId) : null;
-        error_log("System Type found: " . ($systemType ? 'YES' : 'NO'));
-
-        return [
-            'system' => $system,
-            'object' => $object,
-            'equipment' => $this->getEquipment($system->systemId),
-            'repairs' => $this->getRepairs($system->systemId),
-            'maintenance' => $this->getMaintenance($system->systemId),
-            'activations' => $this->getActivations($system->systemId),
-            'mounts' => $this->getMounts($system->systemId),
-            'projects' => $this->getProjects($system->systemId),
-            'branch' => $branch,
-            'subtype' => $subtype,
-            'system_type' => $systemType,
-            'documents' => $this->getRegulations(),
-            'history' => $this->getSystemHistory($system),
-            'plans' => $this->getNewProjects($system->systemId)
-        ];
     }
 
     protected function getRegulations(): array
@@ -285,12 +329,47 @@ class FireSystemService
     private function getEquipment(int $systemId): array
     {
         try {
-            return $this->equipmentRepo->findBySystem($systemId);
+            $equipment = $this->equipmentRepo->findBySystem($systemId);
+
+            // Логируем что возвращается из репозитория
+            Log::channel('debug')->debug('Equipment data from repository in service', [
+                'system_id' => $systemId,
+                'count' => count($equipment),
+                'data_type' => gettype($equipment),
+                'is_array' => is_array($equipment),
+                'first_item_exists' => isset($equipment[0]),
+                'first_item_type' => isset($equipment[0]) ? gettype($equipment[0]) : 'no items',
+                'first_item_class' => isset($equipment[0]) ? get_class($equipment[0]) : 'no items'
+            ]);
+
+            if (isset($equipment[0]) && is_object($equipment[0])) {
+                Log::channel('debug')->debug('First equipment item properties', [
+                    'equipment_type_name' => $equipment[0]->equipment_type_name ?? 'NOT SET',
+                    'model' => $equipment[0]->model ?? 'NOT SET',
+                    'serialNumber' => $equipment[0]->serialNumber ?? 'NOT SET',
+                    'productionYear' => $equipment[0]->productionYear ?? 'NOT SET',
+                    'all_properties' => get_object_vars($equipment[0])
+                ]);
+            }
+
+            return $equipment;
         } catch (\Exception $e) {
-            error_log("Ошибка при получении оборудования: " . $e->getMessage());
+            Log::channel('errors')->error("Ошибка при получении оборудования", [
+                'system_id' => $systemId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
+    // private function getEquipment(int $systemId): array
+    // {
+    //     try {
+    //         return $this->equipmentRepo->findBySystem($systemId);
+    //     } catch (\Exception $e) {
+    //         error_log("Ошибка при получении оборудования: " . $e->getMessage());
+    //         return [];
+    //     }
+    // }
 
     private function getRepairs(int $systemId): array
     {
@@ -475,13 +554,9 @@ class FireSystemService
     /**
      * Получить все данные для формы редактирования/создания системы
      */
-    /**
-     * Получить все данные для формы редактирования/создания системы
-     */
     public function getFormData($identifier = null): array
     {
         try {
-            // Все через репозитории - консистентно!
             $formData = [
                 'branches' => $this->branchRepo->findAll(),
                 'systemTypes' => $this->systemTypeRepo->findAll(),

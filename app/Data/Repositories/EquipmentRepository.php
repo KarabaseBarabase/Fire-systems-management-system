@@ -5,6 +5,7 @@ use App\Data\Entities\Equipment;
 use App\Core\Repository;
 use PDO;
 use PDOException;
+use Illuminate\Support\Facades\Log;
 
 class EquipmentRepository extends Repository
 {
@@ -14,41 +15,47 @@ class EquipmentRepository extends Repository
     public function findBySystem(int $systemId): array
     {
         try {
-            $sql = "SELECT e.*, et.name as equipment_type_name 
-                FROM equipments e 
-                LEFT JOIN equipment_types et ON e.type_id = et.type_id 
-                WHERE e.system_id = :system_id";
+            $sql = "SELECT 
+                e.equipment_id as \"equipmentId\",
+                e.system_id as \"systemId\", 
+                e.type_id as \"typeId\",
+                e.model,
+                e.serial_number as \"serialNumber\",
+                e.location,
+                e.quantity,
+                e.production_year as \"productionYear\",
+                e.production_quarter as \"productionQuarter\", 
+                e.service_life_years as \"serviceLifeYears\",
+                e.control_period as \"controlPeriod\",
+                e.last_control_date as \"lastControlDate\",
+                e.control_result as \"controlResult\",
+                e.notes,
+                et.name as \"equipment_type_name\"
+            FROM equipments e 
+            LEFT JOIN equipment_types et ON e.type_id = et.type_id 
+            WHERE e.system_id = :system_id";
 
             $stmt = $this->getPdo()->prepare($sql);
             $stmt->execute(['system_id' => $systemId]);
 
-            // return array_map([$this, 'hydrate'], $data);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); // Только один вызов fetchAll()
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            // Детальное логирование
+            \Log::channel('database')->debug('Raw equipment data from DB', [
+                'system_id' => $systemId,
+                'row_count' => count($results),
+                'results' => $results
+            ]);
+
+            return $results;
         } catch (PDOException $e) {
-            error_log("Error finding equipment for system {$systemId}: " . $e->getMessage());
+            \Log::channel('errors')->error("Error finding equipment", [
+                'system_id' => $systemId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
-
-    // public function findBySystemWithTypes(int $systemId): array
-    // {
-    //     try {
-    //         $sql = "SELECT e.*, et.name as equipment_type 
-    //             FROM equipments e 
-    //             LEFT JOIN equipment_types et ON e.type_id = et.type_id 
-    //             WHERE e.system_id = :system_id 
-    //             ORDER BY e.equipment_id";
-
-    //         $stmt = $this->getPdo()->prepare($sql);
-    //         $stmt->execute(['system_id' => $systemId]);
-
-    //         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    //     } catch (PDOException $e) {
-    //         error_log("Error finding equipment for system {$systemId}: " . $e->getMessage());
-    //         return [];
-    //     }
-    // }
-
     public function findByType(int $typeId): array
     {
         return $this->findBy(['type_id' => $typeId]);
@@ -69,29 +76,6 @@ class EquipmentRepository extends Repository
         }
     }
 
-    // protected function hydrateArray(array $data): array
-    // {
-    //     // Возвращаем массив с данными
-    //     return [
-    //         'equipment_id' => (int) $data['equipment_id'],
-    //         'system_id' => (int) $data['system_id'],
-    //         'type_id' => (int) $data['type_id'],
-    //         'model' => $data['model'],
-    //         'serial_number' => $data['serial_number'],
-    //         'location' => $data['location'],
-    //         'quantity' => (int) $data['quantity'],
-    //         'production_year' => (int) $data['production_year'],
-    //         'production_quarter' => $data['production_quarter'] ? (int) $data['production_quarter'] : null,
-    //         'service_life_years' => (int) $data['service_life_years'],
-    //         'control_period' => $data['control_period'],
-    //         'last_control_date' => $data['last_control_date'],
-    //         'control_result' => $data['control_result'],
-    //         'notes' => $data['notes'],
-    //         'updated_at' => $data['updated_at'],
-    //         'updated_by' => $data['updated_by'] ? (int) $data['updated_by'] : null,
-    //         'equipment_type_name' => $data['equipment_type_name'] // Добавляем название типа
-    //     ];
-    // }
     protected function hydrate(array $data): Equipment
     {
         return new Equipment(

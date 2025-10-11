@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Core\Database;
 use App\Core\AuthInterface;
+use App\Core\Controller;
 use App\Data\Repositories\FireSystemRepository;
 use Illuminate\Http\Request;
 

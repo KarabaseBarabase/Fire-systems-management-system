@@ -1,61 +1,46 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+1. Доделать вкладку редактирования: починить отображение всех данных, добавить кнопку и форму для добавления новых данных в процессе 
+редактирования (например, "Добавить оборудование")
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+2. Добавить создание новой пожарной системы (исп. ту же форму, что и для редактирования)
 
-## About Laravel
+3. Продумать и реализовать логику реализации плана из таблицы Обновление_систем (system_maintenance) (Убедиться, что оно надо вообще)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+4. Проконтролировать: по факту реализации плана из таблицы Обновление_систем мы должны сделать запись о вводе в эксплуатацию в        таблицу Ввод_в_эксплуатацию, с сохранением реквизитов ремонта: ХС/ПС, КР/ТР/РС 
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+5. Доделать БД для хранения документов, переименовать айдишники
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+6. В сайдбар добавить вкладку просмотр -> 
+    Объекты защиты, 
+    Оборудование, 
+    Документация, 
+    Пожарные системы, 
+    Реализованные проекты, 
+    Ремонты, 
+    Mounts, 
+    Обслуживание систем, 
+    Просмотр списка перспективных проектов, упорядоченных по году (возрастание) по типу по статусу (многоуровневая сортировка) и Перспективных ремонтов по году по типу по статусу, 
+    логирование и история подтверждений для админа, 
+    Персональная история подтверждений
 
-## Learning Laravel
+7. В сайдбаре редактирование -> ... 
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+8. Реализовать механизм подтверждений
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+9. В сайдбаре вкладка подтверждение -> Заявки на подтверждение, История подтверждений
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+10. К каждому элемента сайдбара добавить фильтры по системам, ... ; 
 
-## Laravel Sponsors
+11.  Ограничить доступ в зависимости от полномочий пользователя 
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+12. Реализовать экспорт и импорт
 
-### Premium Partners
+13. Доделать поиск по инвентарному номеру, доделать пагинацию, фильтры во вкладке просмотра отдельной системы
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+14. Придумать и реализовать базовую аналитику, возможно какую нибудь форму создать, чтобы можно было создавать графики прямо из АИС персонально
 
-## Contributing
+15. В сайдбаре аналитика -> ...
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+16. Оптимизировать
 
-## Code of Conduct
+17. Написать документацию
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

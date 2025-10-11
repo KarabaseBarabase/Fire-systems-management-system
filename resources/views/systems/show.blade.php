@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система {{ $system->name ?? 'Без названия' }}</title>
     <link rel="stylesheet" href="{{ asset('css/show.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/main.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/show_partials.css') }}">
 </head>
 
 <body>
@@ -57,42 +59,26 @@
                     <!-- Основная информация -->
                     <div class="tab-content active" id="main">
                         @include('partials.system-main')
-                        <div class="debug-info">
-                            Вкладка "Основное" загружена | ID: main | Контент: {{ strlen($system->name ?? '') }}
-                            символов
-                        </div>
                     </div>
 
                     <!-- Оборудование -->
                     <div class="tab-content" id="equipment">
                         @include('partials.system-equipment')
-                        <div class="debug-info">
-                            Вкладка "Оборудование" загружена | ID: equipment
-                        </div>
                     </div>
 
                     <!-- Документы -->
                     <div class="tab-content" id="docs">
                         @include('partials.system-docs')
-                        <div class="debug-info">
-                            Вкладка "Документы" загружена | ID: docs
-                        </div>
                     </div>
 
                     <!-- История -->
                     <div class="tab-content" id="history">
                         @include('partials.system-history')
-                        <div class="debug-info">
-                            Вкладка "История" загружена | ID: history
-                        </div>
                     </div>
 
                     <!-- Планы -->
                     <div class="tab-content" id="plans">
                         @include('partials.system-plans')
-                        <div class="debug-info">
-                            Вкладка "Планы" загружена | ID: plans
-                        </div>
                     </div>
 
                 </div>

@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Custom;
 use App\Services\FireSystemService;
 use App\Core\AuthInterface;
 use App\Core\Database;
+use Illuminate\Support\Facades\Log;
+use App\Services\SystemManagementService;
+
 class FireSystemController
 {
     private $fireSystemService;
@@ -44,7 +47,7 @@ class FireSystemController
         if (!$this->auth->check()) {
             return redirect('/login');
         }
-
+        \Log::info('Show method called', ['id' => $id, 'view' => 'systems.show']);
         try {
             $fireSystemService = app(FireSystemService::class);
             $systemDetails = $fireSystemService->getSystemWithDetails($id);
@@ -69,6 +72,7 @@ class FireSystemController
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error in show method', ['error' => $e->getMessage()]);
             abort(500, 'Ошибка при загрузке системы: ' . $e->getMessage());
         }
     }
@@ -109,33 +113,229 @@ class FireSystemController
             return response()->json(['error' => 'Не авторизован'], 401);
         }
 
-        $user = $this->auth->user();
-        $userId = $user->user_id;
-
-        error_log("Authenticated user ID: " . $userId);
-        error_log("User object: " . json_encode($user));
-
-        // ПРОВЕРКА: Устанавливаем ли мы правильного пользователя?
-        $this->database->setCurrentUserId($userId);
-
-        // Дополнительная проверка: что БД видит как current_user_id
         try {
-            $currentUser = $this->database->fetch("SELECT current_setting('app.current_user_id', true) as current_user");
-            error_log("DB current_user_id setting: " . ($currentUser['current_user'] ?? 'NOT SET'));
+            $system = $this->systemManagementService->updateCompleteSystem($id, request()->all());
+
+            \Log::channel('business')->info('System updated successfully', [
+                'system_id' => $system->systemId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Система успешно обновлена',
+                'redirect' => route('system.show', $system->systemId)
+            ]);
+
         } catch (\Exception $e) {
-            error_log("Failed to get current_user_id: " . $e->getMessage());
+            \Log::channel('errors')->error('System update failed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Ошибка при обновлении системы'
+            ], 500);
+        }
+    }
+
+    private function updateSystemWithRelations($systemId, $data)
+    {
+        \Log::channel('debug')->info('Starting system relations update', ['system_id' => $systemId]);
+
+        // 1. Обновление основной системы
+        $system = $this->updateFireSystem($systemId, $data);
+
+        // 2. Обновление объекта защиты (если привязан)
+        if (isset($data['objectId']) && $data['objectId']) {
+            $this->updateProtectionObject($data['objectId'], $data);
         }
 
-        $requestData = request()->all();
-        $system = $this->fireSystemService->updateSystem($id, $requestData);
+        // 3. Обновление оборудования
+        if (isset($data['equipment']) && is_array($data['equipment'])) {
+            $this->updateEquipment($systemId, $data['equipment']);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Система успешно обновлена',
-            'data' => $system,
-            'redirect' => route('system.show', $system->systemId)
-        ]);
+        // 4. Обработка удаленного оборудования
+        if (isset($data['deleted_equipment'])) {
+            $this->deleteEquipment($data['deleted_equipment']);
+        }
+
+        // 5. Обновление документации (regulation)
+        $this->updateRegulations($systemId, $data);
+
+        return $system;
     }
+
+    private function updateFireSystem($systemId, $data)
+    {
+        \Log::channel('database')->info('Updating fire_system', [
+            'system_id' => $systemId,
+            'data' => [
+                'name' => $data['name'] ?? null,
+                'subtypeId' => $data['subtypeId'] ?? null,
+                'systemInventoryNumber' => $data['system_inventory_number'] ?? null,
+                'isPartOfObject' => $data['isPartOfObject'] ?? false,
+                'objectId' => $data['objectId'] ?? null
+            ]
+        ]);
+
+        $systemData = [
+            'name' => $data['name'] ?? null,
+            'subtypeId' => $data['subtypeId'] ?? null,
+            'systemInventoryNumber' => $data['system_inventory_number'] ?? null,
+            'isPartOfObject' => filter_var($data['isPartOfObject'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'objectId' => $data['objectId'] ?? null,
+            'manualFileLink' => $data['manualFileLink'] ?? null,
+            'maintenanceScheduleFileLink' => $data['maintenanceScheduleFileLink'] ?? null,
+            'testProgramFileLink' => $data['testProgramFileLink'] ?? null,
+        ];
+
+        $system = $this->fireSystemService->updateSystem($systemId, $systemData);
+
+        \Log::channel('business')->info('Fire system updated', ['system_id' => $systemId]);
+
+        return $system;
+    }
+
+    private function updateProtectionObject($objectId, $data)
+    {
+        \Log::channel('database')->info('Updating protection_object', [
+            'object_id' => $objectId,
+            'data' => [
+                'name' => $data['objectName'] ?? null,
+                'shortName' => $data['objectShortName'] ?? null,
+                'inventoryNumber' => $data['objectInventoryNumber'] ?? null,
+                'objectGroupId' => $data['objectGroupId'] ?? null,
+                'curatorId' => $data['curatorId'] ?? null,
+                'notes' => $data['objectNotes'] ?? null
+            ]
+        ]);
+
+        $objectData = [
+            'name' => $data['objectName'] ?? null,
+            'shortName' => $data['objectShortName'] ?? null,
+            'inventoryNumber' => $data['objectInventoryNumber'] ?? null,
+            'objectGroupId' => $data['objectGroupId'] ?? null,
+            'curatorId' => $data['curatorId'] ?? null,
+            'notes' => $data['objectNotes'] ?? null,
+        ];
+
+        // Удаляем null значения
+        $objectData = array_filter($objectData, function ($value) {
+            return $value !== null;
+        });
+
+        if (!empty($objectData)) {
+            // Предполагая, что у вас есть сервис для объектов
+            $this->protectionObjectService->updateObject($objectId, $objectData);
+            \Log::channel('business')->info('Protection object updated', ['object_id' => $objectId]);
+        }
+    }
+
+    private function updateEquipment($systemId, $equipmentData)
+    {
+        \Log::channel('database')->info('Updating equipment', [
+            'system_id' => $systemId,
+            'equipment_count' => count($equipmentData),
+            'equipment_data' => $equipmentData
+        ]);
+
+        foreach ($equipmentData as $index => $eqData) {
+            try {
+                $equipmentId = $eqData['equipmentId'] ?? null;
+
+                $equipmentItemData = [
+                    'systemId' => $systemId,
+                    'typeId' => $eqData['typeId'] ?? null,
+                    'model' => $eqData['model'] ?? null,
+                    'serialNumber' => $eqData['serialNumber'] ?? null,
+                    'location' => $eqData['location'] ?? null,
+                    'quantity' => $eqData['quantity'] ?? 1,
+                    'productionYear' => $eqData['productionYear'] ?? null,
+                    'productionQuarter' => $eqData['productionQuarter'] ?? null,
+                    'serviceLifeYears' => $eqData['serviceLifeYears'] ?? null,
+                    'controlPeriod' => $eqData['controlPeriod'] ?? null,
+                    'lastControlDate' => $eqData['lastControlDate'] ?? null,
+                    'controlResult' => $eqData['controlResult'] ?? null,
+                    'notes' => $eqData['notes'] ?? null,
+                ];
+
+                // Удаляем null значения
+                $equipmentItemData = array_filter($equipmentItemData, function ($value) {
+                    return $value !== null;
+                });
+
+                if ($equipmentId) {
+                    // Обновление существующего оборудования
+                    $this->equipmentService->updateEquipment($equipmentId, $equipmentItemData);
+                    \Log::channel('debug')->info('Equipment updated', [
+                        'equipment_id' => $equipmentId,
+                        'index' => $index
+                    ]);
+                } else {
+                    // Создание нового оборудования
+                    $newEquipment = $this->equipmentService->createEquipment($equipmentItemData);
+                    \Log::channel('business')->info('New equipment created', [
+                        'equipment_id' => $newEquipment->equipmentId,
+                        'system_id' => $systemId
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                \Log::channel('errors')->error('Equipment update failed', [
+                    'system_id' => $systemId,
+                    'index' => $index,
+                    'error' => $e->getMessage()
+                ]);
+                // Продолжаем обработку остального оборудования
+                continue;
+            }
+        }
+    }
+
+    private function deleteEquipment($deletedEquipmentJson)
+    {
+        $deletedIds = json_decode($deletedEquipmentJson, true) ?? [];
+
+        if (!empty($deletedIds)) {
+            \Log::channel('database')->info('Deleting equipment', ['equipment_ids' => $deletedIds]);
+
+            foreach ($deletedIds as $equipmentId) {
+                try {
+                    $this->equipmentService->deleteEquipment($equipmentId);
+                    \Log::channel('business')->info('Equipment deleted', ['equipment_id' => $equipmentId]);
+                } catch (\Exception $e) {
+                    \Log::channel('errors')->error('Equipment deletion failed', [
+                        'equipment_id' => $equipmentId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function updateRegulations($systemId, $data)
+    {
+        \Log::channel('database')->info('Updating regulations', ['system_id' => $systemId]);
+
+        $regulationData = [
+            'manualFileLink' => $data['manualFileLink'] ?? null,
+            'maintenanceScheduleFileLink' => $data['maintenanceScheduleFileLink'] ?? null,
+            'testProgramFileLink' => $data['testProgramFileLink'] ?? null,
+        ];
+
+        // Удаляем null значения
+        $regulationData = array_filter($regulationData, function ($value) {
+            return $value !== null;
+        });
+
+        if (!empty($regulationData)) {
+            // Предполагая, что у вас есть сервис для документации
+            $this->regulationService->updateOrCreateRegulation($systemId, $regulationData);
+            \Log::channel('business')->info('Regulations updated', ['system_id' => $systemId]);
+        }
+    }
+
     /* Удалить систему */
     public function destroy($uuid)
     {

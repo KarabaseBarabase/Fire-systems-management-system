@@ -6,6 +6,13 @@ use App\Core\Database;
 use App\Core\AuthInterface;
 use App\Core\SessionAuth;
 use Illuminate\Support\ServiceProvider;
+use App\Services\{
+    SystemManagementService,
+    FireSystemService,
+    ProtectionObjectService,
+    EquipmentService,
+    RegulationService
+};
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +41,15 @@ class AppServiceProvider extends ServiceProvider
         // Регистрируем репозитории
         $this->app->bind(\App\Data\Repositories\FireSystemRepository::class, function ($app) {
             return new \App\Data\Repositories\FireSystemRepository($app->make(Database::class));
+        });
+
+        $this->app->singleton('system.management', function ($app) {
+            return new SystemManagementService(
+                $app->make(FireSystemService::class),
+                $app->make(ProtectionObjectService::class),
+                $app->make(EquipmentService::class),
+                $app->make(RegulationService::class)
+            );
         });
     }
 

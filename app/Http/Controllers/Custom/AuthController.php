@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Custom;
 use App\Core\AuthInterface;
 use App\Core\Database;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
+use App\Core\Controller;
 
 class AuthController extends Controller
 {

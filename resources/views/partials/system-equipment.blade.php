@@ -2,13 +2,19 @@
     <h3>Оборудование системы</h3>
 
     <!-- Отладочная информация -->
-    <div style="display: none;">
-        <p>Equipment data: {{ json_encode($equipment) }}</p>
-        <p>Equipment count: {{ count($equipment ?? []) }}</p>
-        @if(!empty($equipment) && count($equipment) > 0)
-            <p>First item: {{ json_encode($equipment[0]) }}</p>
+    <!-- <div class="debug-info" style="display: block; background: #fff3cd; padding: 10px; margin: 10px 0;">
+        <strong>Отладка оборудования:</strong><br>
+        Equipment exists: {{ isset($equipment) ? 'YES' : 'NO' }}<br>
+        Equipment count: {{ count($equipment ?? []) }}<br>
+        @if(isset($equipment) && count($equipment) > 0)
+            First item type: {{ gettype($equipment[0]) }}<br>
+            First item class: {{ get_class($equipment[0]) }}<br>
+            First item properties:
+            @foreach(get_object_vars($equipment[0]) as $key => $value)
+                {{ $key }}: {{ $value }},
+            @endforeach
         @endif
-    </div>
+    </div> -->
 
     <div class="section-toolbar">
         <div class="search-box">
@@ -43,22 +49,22 @@
             <tbody>
                 @forelse($equipment ?? [] as $item)
                     <tr>
-                        <td><span class="badge">{{ $item['equipment_type_name'] ?? 'Не указан' }}</span></td>
-                        <td>{{ $item['model'] ?? 'Не указана' }}</td>
-                        <td><code>{{ $item['serial_number'] ?? 'Не указан' }}</code></td>
-                        <td>{{ $item['quantity'] ?? 1 }}</td>
-                        <td>{{ $item['production_year'] ?? 'Не указан' }}</td>
+                        <td><span class="badge">{{ $item->equipment_type_name ?? 'Не указан' }}</span></td>
+                        <td>{{ $item->model ?? 'Не указана' }}</td>
+                        <td><code>{{ $item->serialNumber ?? 'Не указан' }}</code></td>
+                        <td>{{ $item->quantity ?? 1 }}</td>
+                        <td>{{ $item->productionYear ?? 'Не указан' }}</td>
                         <td>
-                            @if(isset($item['production_year']) && isset($item['service_life_years']))
-                                До {{ ($item['production_year'] + $item['service_life_years']) }} года
+                            @if(isset($item->productionYear) && isset($item->serviceLifeYears))
+                                До {{ ($item->productionYear + $item->serviceLifeYears) }} года
                             @else
                                 Не указан
                             @endif
                         </td>
-                        <td>{{ $item['location'] ?? 'Не указано' }}</td>
+                        <td>{{ $item->location ?? 'Не указано' }}</td>
                         <td>
                             @php
-                                $expirationYear = ($item['production_year'] ?? 0) + ($item['service_life_years'] ?? 0);
+                                $expirationYear = ($item->productionYear ?? 0) + ($item->serviceLifeYears ?? 0);
                                 $currentYear = date('Y');
                                 $status = $expirationYear > $currentYear ? 'active' : 'expired';
                             @endphp
@@ -66,13 +72,21 @@
                                 {{ $status === 'active' ? 'Исправен' : 'Истёк срок' }}
                             </span>
                         </td>
-                        <td>{{ $item['last_control_date'] ? \Carbon\Carbon::parse($item['last_control_date'])->format('d.m.Y') : 'Не указана' }}
+                        <td>
+                            @php
+                                $lastControlDate = $item->lastControlDate ?? null;
+                            @endphp
+                            @if(!empty($lastControlDate))
+                                {{ \Carbon\Carbon::parse($lastControlDate)->format('d.m.Y') }}
+                            @else
+                                Не указана
+                            @endif
                         </td>
-                        <td>{{ $item['control_result'] ?? 'Не указан' }}</td>
+                        <td>{{ $item->controlResult ?? 'Не указан' }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted">Оборудование не найдено</td>
+                        <td colspan="10" class="text-center text-muted">Оборудование не найдено</td>
                     </tr>
                 @endforelse
             </tbody>
