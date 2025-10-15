@@ -5,6 +5,7 @@ use App\Data\Entities\NewProject;
 use App\Core\Repository;
 use PDO;
 use PDOException;
+use Illuminate\Support\Facades\Log;
 class NewProjectRepository extends Repository
 {
     protected $table = 'new_projects';
@@ -15,50 +16,88 @@ class NewProjectRepository extends Repository
         return $this->findBy(['system_id' => $systemId]);
     }
 
+    // public function findBySystemWithDetails(int $systemId): array
+    // {
+    //     try {
+    //         $sql = "
+    //         SELECT 
+    //             np.*,
+    //             r.code as regulation_code,
+    //             r.name as regulation_name,
+    //             do.name as design_org_name,
+    //             do.short_name as design_org_short_name,
+    //             u.full_name as updated_by_name
+    //         FROM new_projects np
+    //         LEFT JOIN regulations r ON np.regulation_id = r.regulation_id
+    //         LEFT JOIN design_organizations do ON np.design_org_id = do.org_id
+    //         LEFT JOIN users u ON np.updated_by = u.user_id
+    //         WHERE np.system_id = :system_id
+    //         ORDER BY np.planned_year DESC, np.created_at DESC
+    //     ";
+
+    //         $stmt = $this->getPdo()->prepare($sql);
+    //         $stmt->bindValue(':system_id', (int) $systemId, PDO::PARAM_INT);
+    //         $stmt->execute();
+    //         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    //         return array_map([$this, 'hydrateWithDetails'], $results);
+    //     } catch (PDOException $e) {
+    //         Log::channel('debug')->debug("Error finding projects with details: " . $e->getMessage());
+    //         return [];
+    //     }
+    // }
+
     public function findBySystemWithDetails(int $systemId): array
     {
         try {
-            error_log("=== DEBUG: Searching for projects with system_id = {$systemId} ===");
+            $pdo = $this->getPdo();
 
-            // Сначала простой запрос без JOIN
-            $simpleSql = "SELECT * FROM new_projects WHERE system_id = :system_id";
-            $simpleStmt = $this->getPdo()->prepare($simpleSql);
-            $simpleStmt->execute(['system_id' => $systemId]);
-            $simpleResults = $simpleStmt->fetchAll(PDO::FETCH_ASSOC);
+            $sql = "
+            SELECT 
+                np.*,
+                r.code AS regulation_code,
+                r.name AS regulation_name,
+                dorg.name AS design_org_name,
+                dorg.short_name AS design_org_short_name,
+                u.full_name AS updated_by_name
+            FROM public.new_projects np
+            LEFT JOIN public.regulations r ON np.regulation_id = r.regulation_id
+            LEFT JOIN public.design_organizations dorg ON np.design_org_id = dorg.org_id
+            LEFT JOIN public.users u ON np.updated_by = u.user_id
+            WHERE np.system_id = :system_id
+            ORDER BY np.planned_year DESC, np.created_at DESC
+            ";
 
-            error_log("Simple query found: " . count($simpleResults) . " results");
-            if (count($simpleResults) > 0) {
-                error_log("Simple result: " . json_encode($simpleResults[0]));
-            }
+            $stmt = $pdo->prepare($sql);
 
-            // Теперь запрос с JOIN
-            $sql = "SELECT np.*, 
-                       org.name as design_org_name,
-                       org.short_name as design_org_short_name,
-                       r.code as regulation_code,
-                       r.name as regulation_name
-                FROM new_projects np 
-                LEFT JOIN design_organizations org ON np.design_org_id = org.org_id 
-                LEFT JOIN regulations r ON np.regulation_id = r.regulation_id 
-                WHERE np.system_id = :system_id 
-                ORDER BY np.planned_year DESC, np.project_id DESC";
+            $stmt->bindValue(':system_id', $systemId, PDO::PARAM_INT);
 
-            $stmt = $this->getPdo()->prepare($sql);
-            $stmt->execute(['system_id' => $systemId]);
+            $stmt->execute();
+
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            error_log("JOIN query found: " . count($results) . " results");
-            if (count($results) > 0) {
-                error_log("JOIN result: " . json_encode($results[0]));
-            }
+            Log::channel('debug')->debug(
+                "[findBySystemWithDetails] Raw results from DB:",
+                array_map(function ($row) {
+                    return [
+                        'project_id' => $row['project_id'],
+                        'created_at' => $row['created_at'],
+                        'updated_at' => $row['updated_at']
+                    ];
+                }, $results)
+            );
 
-            return $results;
+            return array_map([$this, 'hydrateWithDetails'], $results);
+
         } catch (PDOException $e) {
-            error_log("Error finding new projects for system {$systemId}: " . $e->getMessage());
-            error_log("SQL error info: " . print_r($stmt->errorInfo(), true));
+            Log::channel('debug')->error("[findBySystemWithDetails] PDO Error: " . $e->getMessage());
+            return [];
+        } catch (\Throwable $e) {
+            Log::channel('debug')->error("[findBySystemWithDetails] General Error: " . $e->getMessage());
             return [];
         }
     }
+
     public function debugAllProjects(): array
     {
         try {
@@ -66,15 +105,15 @@ class NewProjectRepository extends Repository
             $stmt = $this->getPdo()->query($sql);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            error_log("=== DEBUG: All projects in database ===");
-            error_log("Total projects: " . count($results));
+            Log::channel('debug')->debug("=== DEBUG: All projects in database ===");
+            Log::channel('debug')->debug("Total projects: " . count($results));
             foreach ($results as $project) {
-                error_log("Project: system_id=" . $project['system_id'] . ", id=" . $project['project_id']);
+                Log::channel('debug')->debug("Project: system_id=" . $project['system_id'] . ", id=" . $project['project_id']);
             }
 
             return $results;
         } catch (PDOException $e) {
-            error_log("Error debugging projects: " . $e->getMessage());
+            Log::channel('debug')->debug("Error debugging projects: " . $e->getMessage());
             return [];
         }
     }
@@ -96,7 +135,7 @@ class NewProjectRepository extends Repository
             $stmt = $this->getPdo()->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error finding all projects: " . $e->getMessage());
+            Log::channel('debug')->debug("Error finding all projects: " . $e->getMessage());
             return [];
         }
     }
@@ -116,6 +155,34 @@ class NewProjectRepository extends Repository
         $project->projectFileLink = $data['project_file_link'] ?? null;
         $project->updatedAt = $data['updated_at'] ? new \DateTimeImmutable($data['updated_at']) : null;
         $project->updatedBy = $data['updated_by'] ? (int) $data['updated_by'] : null;
+
+        return $project;
+    }
+
+    protected function hydrateWithDetails(array $data): NewProject
+    {
+        $project = new NewProject(
+            projectId: (int) $data['project_id'],
+            recordUuid: $data['record_uuid'],
+            systemId: (int) $data['system_id'],
+            developmentMethod: $data['development_method'],
+            regulationId: (int) $data['regulation_id'],
+            plannedYear: (int) $data['planned_year'],
+            status: $data['status'],
+            designOrgId: $data['design_org_id'] ? (int) $data['design_org_id'] : null,
+            projectCode: $data['project_code'] ?? null,
+            projectFileLink: $data['project_file_link'] ?? null,
+            updatedAt: $data['updated_at'] ? new \DateTimeImmutable($data['updated_at']) : null,
+            updatedBy: $data['updated_by'] ? (int) $data['updated_by'] : null,
+            createdAt: $data['created_at'] ? new \DateTimeImmutable($data['created_at']) : null
+        );
+
+        // Добавляем связанные данные как динамические свойства
+        $project->regulationCode = $data['regulation_code'] ?? null;
+        $project->regulationName = $data['regulation_name'] ?? null;
+        $project->designOrgName = $data['design_org_name'] ?? null;
+        $project->designOrgShortName = $data['design_org_short_name'] ?? null;
+        $project->updatedByName = $data['updated_by_name'] ?? null;
 
         return $project;
     }

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Custom\FireSystemController;
 use App\Http\Controllers\Custom\AuthController;
 use App\Http\Controllers\Custom\AnalyticsController;
@@ -18,7 +19,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Защищенные маршруты с middleware
 Route::middleware(['auth.custom'])->group(function () {
     Route::get('/systems', function () {
-        return redirect('/'); });
+        return redirect('/');
+    });
     Route::get('/system/{id}', [FireSystemController::class, 'show'])->name('system.show');
     Route::delete('/systems/{uuid}', [FireSystemController::class, 'destroy'])->name('system.destroy');
     Route::get('/analytics', [AnalyticsController::class, 'index']);

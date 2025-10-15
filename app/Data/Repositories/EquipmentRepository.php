@@ -41,7 +41,7 @@ class EquipmentRepository extends Repository
             $results = $stmt->fetchAll(PDO::FETCH_OBJ);
 
             // Детальное логирование
-            \Log::channel('database')->debug('Raw equipment data from DB', [
+            Log::channel('database')->debug('Raw equipment data from DB', [
                 'system_id' => $systemId,
                 'row_count' => count($results),
                 'results' => $results
@@ -49,7 +49,7 @@ class EquipmentRepository extends Repository
 
             return $results;
         } catch (PDOException $e) {
-            \Log::channel('errors')->error("Error finding equipment", [
+            Log::channel('errors')->error("Error finding equipment", [
                 'system_id' => $systemId,
                 'error' => $e->getMessage()
             ]);

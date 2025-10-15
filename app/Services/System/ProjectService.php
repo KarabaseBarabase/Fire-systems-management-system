@@ -1,26 +1,43 @@
 <?php
-namespace App\Services;
+namespace App\Services\System;
 
+use App\Data\Repositories\DesignOrganizationRepository;
+use App\Data\Repositories\InstallationOrganizationRepository;
 use App\Data\Repositories\NewProjectRepository;
 use App\Data\Repositories\ImplementedProjectRepository;
 use App\Data\Repositories\FireSystemRepository;
 use App\Data\Entities\NewProject;
 use App\Data\Entities\ImplementedProject;
+use Illuminate\Support\Facades\Log;
 
 class ProjectService
 {
-    private $newProjectRepo;
-    private $implementedProjectRepo;
-    private $fireSystemRepo;
+    private $newProjectRepo; // (запланированные проекты)
+
+    private $implementedProjectRepo; // (реализованные проекты)
+    private $designOrganizationRepo;
+    private $installationOrganizationRepo;
 
     public function __construct(
         NewProjectRepository $newProjectRepo,
         ImplementedProjectRepository $implementedProjectRepo,
-        FireSystemRepository $fireSystemRepo
+        DesignOrganizationRepository $designOrganizationRepo,
+        InstallationOrganizationRepository $installationOrganizationRepo
     ) {
         $this->newProjectRepo = $newProjectRepo;
         $this->implementedProjectRepo = $implementedProjectRepo;
-        $this->fireSystemRepo = $fireSystemRepo;
+        $this->designOrganizationRepo = $designOrganizationRepo;
+        $this->installationOrganizationRepo = $installationOrganizationRepo;
+    }
+
+    public function getAllDesignOrganization()
+    {
+        return $this->designOrganizationRepo->findAll();
+    }
+
+    public function getAllInstallationOrganization()
+    {
+        return $this->installationOrganizationRepo->findAll();
     }
 
     /* Создание нового проекта */
@@ -89,8 +106,9 @@ class ProjectService
     /* Получение проектов по системе */
     public function getProjectsBySystem(int $systemId): array
     {
+        $newProjects = $this->newProjectRepo->findBySystemWithDetails($systemId);
         return [
-            'new_projects' => $this->newProjectRepo->findBySystem($systemId),
+            'new_projects' => array_map(fn($p) => $p->toArray(), $newProjects),
             'implemented_projects' => $this->implementedProjectRepo->findBySystem($systemId)
         ];
     }

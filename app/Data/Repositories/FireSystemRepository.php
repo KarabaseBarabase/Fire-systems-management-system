@@ -35,7 +35,32 @@ class FireSystemRepository extends Repository
         return !empty($results) ? $results[0] : null;
     }
 
+    public function getSystemDocuments($systemId): array
+    {
+        try {
+            $stmt = $this->getPdo()->prepare("
+            SELECT 
+                manual_file_link,
+                maintenance_schedule_file_link, 
+                test_program_file_link
+            FROM fire_systems 
+            WHERE system_id = :system_id
+        ");
+            $stmt->execute(['system_id' => $systemId]);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
+            return $data ?: [];
+        } catch (PDOException $e) {
+            error_log("Error getting system documents: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function findWithBranch($systemId)
+    {
+        return $this->table->with(['protectionObject.branch'])
+            ->find($systemId);
+    }
 
     protected function hydrate(array $data): FireSystem
     {

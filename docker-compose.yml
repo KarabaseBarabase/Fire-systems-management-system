@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: dockerfile
     ports:
-      - "8081:8000"
+      - "8082:8000"
     volumes:
       - .:/var/www
     depends_on:

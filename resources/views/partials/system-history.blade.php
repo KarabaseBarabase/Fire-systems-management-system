@@ -48,7 +48,7 @@
                             <div class="changed-fields">
                                 <h6><i class="icon-list"></i> Измененные поля:</h6>
                                 <div class="field-changes">
-                                    @foreach(json_decode($event['changed_fields'], true) as $field => $value)
+                                    @foreach($event['changed_fields'] as $field => $value)
                                         <div class="field-change">
                                             <span class="field-name">{{ $field }}:</span>
                                             <span class="field-value">

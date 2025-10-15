@@ -12,10 +12,15 @@ class ChangeLogRepository extends Repository
 
     public function findByTableAndRecord(string $tableName, string $recordUuid): array
     {
-        return $this->findBy([
+        $results = $this->findBy([
             'table_name' => $tableName,
             'record_uuid' => $recordUuid
         ]);
+
+        // Преобразуем объекты в массивы
+        return array_map(function ($changeLog) {
+            return $changeLog->toArray();
+        }, $results);
     }
 
     public function findByTableAndRecordWithUser(string $tableName, string $recordUuid): array

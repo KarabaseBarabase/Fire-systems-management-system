@@ -12,7 +12,7 @@ class ChangeLog
     public string $action;
     public array $changedFields;
     public ?int $changedBy = null;
-    public \DateTimeImmutable $changedAt;
+    public ?\DateTimeImmutable $changedAt;
 
     public function __construct(
         int $logId,
@@ -20,7 +20,7 @@ class ChangeLog
         string $recordUuid,
         string $action,
         array $changedFields,
-        \DateTimeImmutable $changedAt,
+        ?\DateTimeImmutable $changedAt = null,
         ?int $changedBy = null
     ) {
         $this->logId = $logId;
@@ -30,5 +30,27 @@ class ChangeLog
         $this->changedFields = $changedFields;
         $this->changedBy = $changedBy;
         $this->changedAt = $changedAt;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'log_id' => $this->logId,
+            'table_name' => $this->tableName,
+            'record_uuid' => $this->recordUuid,
+            'action' => $this->action,
+            'changed_fields' => $this->changedFields,
+            'changed_by' => $this->changedBy,
+            'changed_at' => $this->changedAt?->format('Y-m-d H:i:s'),
+            'user_name' => $this->getUserName(), // если есть метод для получения имени пользователя
+        ];
+    }
+
+    // Дополнительно можно добавить метод для получения имени пользователя
+    private function getUserName(): ?string
+    {
+        // получение имени пользователя по changedBy
+        // Например, через репозиторий или кэш
+        return null; // временно
     }
 }

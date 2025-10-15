@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class WorkSeeder extends Seeder
 {
@@ -20,7 +22,7 @@ class WorkSeeder extends Seeder
     ");
 
         if (!$functionExists) {
-            \Log::warning('Функция assign_roles_to_user не найдена!');
+            Log::warning('Функция assign_roles_to_user не найдена!');
             return;
         }
         // Примеры групп объектов
@@ -350,7 +352,7 @@ class WorkSeeder extends Seeder
 
         DB::table('new_projects')->insert($newProjects);
 
-        \Log::info('Проверка создания функций...');
+        Log::info('Проверка создания функций...');
         try {
             $functionExists = DB::selectOne("
             SELECT 1 FROM pg_proc 
@@ -359,13 +361,13 @@ class WorkSeeder extends Seeder
         ");
 
             if ($functionExists) {
-                \Log::info('Функция assign_roles_to_user успешно создана в миграции');
+                Log::info('Функция assign_roles_to_user успешно создана в миграции');
             } else {
-                \Log::error('Функция assign_roles_to_user НЕ создана в миграции!');
+                Log::error('Функция assign_roles_to_user НЕ создана в миграции!');
             }
 
         } catch (\Exception $e) {
-            \Log::error('Ошибка проверки функции: ' . $e->getMessage());
+            Log::error('Ошибка проверки функции: ' . $e->getMessage());
         }
     }
 
@@ -387,7 +389,7 @@ class WorkSeeder extends Seeder
 
         DB::statement('SET session_replication_role = replica;');
         foreach ($tables as $table) {
-            if (\Schema::hasTable($table)) {
+            if (Schema::hasTable($table)) {
                 DB::table($table)->truncate();
             }
         }

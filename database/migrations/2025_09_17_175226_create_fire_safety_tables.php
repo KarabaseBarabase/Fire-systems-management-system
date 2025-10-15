@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
     public function up(): void
@@ -74,7 +75,7 @@ return new class extends Migration {
             $table->string('password_hash', 200);
             $table->string('full_name', 200);
             $table->string('email', 200)->nullable();
-            $table->smallInteger('branch_id')->nullable()->constrained('branches', 'branch_id');
+            $table->smallInteger('branch_id')->nullable();
             $table->foreignId('curator_id')->nullable()->constrained('curators', 'curator_id');
             $table->enum('position', [
                 'главный инженер',
@@ -93,6 +94,10 @@ return new class extends Migration {
             $table->timestamp('last_active_at')->nullable();
             $table->timestamps();
         });
+        // Добавляем внешний ключ для users.branch_id ПОСЛЕ создания таблицы users
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('branch_id')->references('branch_id')->on('branches');
+        });
 
         Schema::create('user_roles', function (Blueprint $table) {
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -104,7 +109,7 @@ return new class extends Migration {
         Schema::create('protection_objects', function (Blueprint $table) {
             $table->id('object_id');
             $table->uuid('record_uuid')->unique()->default(DB::raw('gen_random_uuid()'));
-            $table->smallInteger('branch_id')->constrained('branches', 'branch_id');
+            $table->smallInteger('branch_id');
             $table->string('name', 200);
             $table->string('short_name', 100)->nullable();
             $table->foreignId('object_group_id')->constrained('object_groups', 'group_id');
@@ -113,6 +118,10 @@ return new class extends Migration {
             $table->text('notes')->nullable();
             $table->foreignId('updated_by')->nullable()->constrained('users', 'user_id');
             $table->timestamps();
+        });
+        // Добавляем внешний ключ для protection_objects.branch_id ПОСЛЕ создания таблицы
+        Schema::table('protection_objects', function (Blueprint $table) {
+            $table->foreign('branch_id')->references('branch_id')->on('branches');
         });
 
         Schema::create('fire_systems', function (Blueprint $table) {
@@ -135,6 +144,47 @@ return new class extends Migration {
             $table->index('object_id');
             $table->index('system_inventory_number');
             $table->index('record_uuid');
+        });
+
+        // Таблица для хранения документов систем
+        Schema::create('system_documents', function (Blueprint $table) {
+            $table->id('document_id');
+            $table->uuid('record_uuid')->unique()->default(DB::raw('gen_random_uuid()'));
+            $table->foreignId('system_id')->constrained('fire_systems', 'system_id')->onDelete('cascade');
+            $table->enum('document_type', [
+                'working_project',      // Рабочий проект
+                'technical_task',       // Техническое задание
+                'execution_docs',       // Исполнительная документация
+                'operational_manual',   // Руководство по эксплуатации
+                'maintenance_schedule', // График ТО
+                'test_protocol',        // Протокол испытаний
+                'certificate',          // Сертификаты
+                'inspection_act',       // Акт проверки МЧС
+                'other'                 // Прочие
+            ]);
+            $table->string('document_name', 300);
+            $table->string('original_name', 300)->nullable();    // Оригинальное имя файла
+            $table->string('stored_name', 300)->nullable();      // Уникальное имя в хранилище
+            $table->string('file_path', 500)->nullable();        // Путь к файлу
+            $table->string('cloud_key', 500)->nullable();        // Ключ в облачном хранилище
+            $table->integer('file_size')->nullable();            // Размер в байтах
+            $table->string('mime_type', 100)->nullable();        // Тип файла
+            $table->date('document_date')->nullable();           // Дата создания документа
+            $table->timestamp('uploaded_at')->useCurrent();      // Когда загружен в систему
+            $table->foreignId('uploaded_by')->constrained('users', 'user_id'); // Кто загрузил
+            $table->foreignId('created_by')->nullable()->constrained('users', 'user_id'); // Автор документа
+            $table->text('description')->nullable();
+            $table->string('version', 50)->nullable();           // Версия документа
+            $table->boolean('is_current')->default(true);        // Актуальная версия
+            $table->timestamps();
+        });
+
+        // Индексы для system_documents
+        Schema::table('system_documents', function (Blueprint $table) {
+            $table->index('system_id');
+            $table->index('document_type');
+            $table->index('is_current');
+            $table->index(['system_id', 'document_type', 'is_current']);
         });
 
         Schema::create('implemented_projects', function (Blueprint $table) {
@@ -317,6 +367,7 @@ return new class extends Migration {
         Schema::dropIfExists('mounts');
         Schema::dropIfExists('repairs');
         Schema::dropIfExists('implemented_projects');
+        Schema::dropIfExists('system_documents');
         Schema::dropIfExists('fire_systems');
         Schema::dropIfExists('protection_objects');
         Schema::dropIfExists('user_roles');

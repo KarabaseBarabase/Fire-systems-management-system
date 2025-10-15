@@ -5,18 +5,19 @@ use App\Services\FireSystemService;
 use App\Core\AuthInterface;
 use App\Core\Database;
 use Illuminate\Support\Facades\Log;
-use App\Services\SystemManagementService;
+use SystemManager;
 
 class FireSystemController
 {
     private $fireSystemService;
     private $fireSystemRepository;
+    private $systemManager;
     private $auth;
     private $database;
 
-    public function __construct(FireSystemService $fireSystemService, AuthInterface $auth, Database $database, )
+    public function __construct(SystemManager $systemManager, AuthInterface $auth, Database $database, )
     {
-        $this->fireSystemService = $fireSystemService;
+        $this->systemManager = $systemManager;
         $this->auth = $auth;
         $this->database = $database;
     }
@@ -42,39 +43,63 @@ class FireSystemController
             ];
         }
     }
+    // public function show($id)
+    // {
+    //     if (!$this->auth->check()) {
+    //         return redirect('/login');
+    //     }
+    //     \Log::channel('debug')->info('Show method called', ['id' => $id, 'view' => 'systems.show']);
+    //     try {
+    //         $fireSystemService = app(FireSystemService::class);
+    //         $systemDetails = $fireSystemService->getSystemWithDetails($id);
+
+    //         return view('systems.show', [
+    //             'system' => $systemDetails['system'],
+    //             'object' => $systemDetails['object'],
+    //             'equipment' => $systemDetails['equipment'],
+    //             'repairs' => $systemDetails['repairs'],
+    //             'maintenance' => $systemDetails['maintenance'],
+    //             'activations' => $systemDetails['activations'],
+    //             'mounts' => $systemDetails['mounts'],
+    //             'projects' => $systemDetails['projects'], // Реализованные проекты
+    //             'branch' => $systemDetails['branch'],
+    //             'subtype' => $systemDetails['subtype'],
+    //             'system_type' => $systemDetails['system_type'],
+    //             'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
+    //             'userRole' => $this->auth->user()->position ?? 'Пользователь',
+    //             'documents' => $systemDetails['documents'],
+    //             'history' => $systemDetails['history'],
+    //             'plans' => $systemDetails['plans'] // Новые проекты
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error in show method', ['error' => $e->getMessage()]);
+    //         abort(500, 'Ошибка при загрузке системы: ' . $e->getMessage());
+    //     }
+    // }
     public function show($id)
     {
-        if (!$this->auth->check()) {
-            return redirect('/login');
-        }
-        \Log::info('Show method called', ['id' => $id, 'view' => 'systems.show']);
-        try {
-            $fireSystemService = app(FireSystemService::class);
-            $systemDetails = $fireSystemService->getSystemWithDetails($id);
+        $systemDetails = SystemManager::getSystemWithDetails($id);
 
-            return view('systems.show', [
-                'system' => $systemDetails['system'],
-                'object' => $systemDetails['object'],
-                'equipment' => $systemDetails['equipment'],
-                'repairs' => $systemDetails['repairs'],
-                'maintenance' => $systemDetails['maintenance'],
-                'activations' => $systemDetails['activations'],
-                'mounts' => $systemDetails['mounts'],
-                'projects' => $systemDetails['projects'], // Реализованные проекты
-                'branch' => $systemDetails['branch'],
-                'subtype' => $systemDetails['subtype'],
-                'system_type' => $systemDetails['system_type'],
-                'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
-                'userRole' => $this->auth->user()->position ?? 'Пользователь',
-                'documents' => $systemDetails['documents'],
-                'history' => $systemDetails['history'],
-                'plans' => $systemDetails['plans'] // Новые проекты
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in show method', ['error' => $e->getMessage()]);
-            abort(500, 'Ошибка при загрузке системы: ' . $e->getMessage());
-        }
+        return view('systems.show', [
+            'system' => $systemDetails['system'],
+            'object' => $systemDetails['object'],
+            'equipment' => $systemDetails['equipment'],
+            'repairs' => $systemDetails['repairs'],
+            'maintenance' => $systemDetails['maintenance'],
+            'activations' => $systemDetails['activations'],
+            'mounts' => $systemDetails['mounts'],
+            'projects' => $systemDetails['implemented_projects'], // из projectData
+            'branch' => $systemDetails['branch'],
+            'subtype' => $systemDetails['subtype'],
+            'system_type' => $systemDetails['type'], // обратите внимание - 'type' а не 'system_type'
+            'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
+            'userRole' => $this->auth->user()->position ?? 'Пользователь',
+            'documents' => $systemDetails['documents'], // документация системы из coreData
+            'regulations' => $systemDetails['regulations'], // нормативные документы из coreData
+            'history' => $systemDetails['history'],
+            'plans' => $systemDetails['new_projects'] // из projectData
+        ]);
     }
 
     /* Создать новую систему */
@@ -105,6 +130,49 @@ class FireSystemController
             ];
         }
     }
+    public function create()
+    {
+        if (!$this->auth->check()) {
+            return ['error' => 'Не авторизован'];
+        }
+
+        try {
+            return [
+                'success' => true,
+                'view_data' => [
+                    'systemSubtypes' => $this->systemCoreService->getAllSystemSubtypes(),
+                    'protectionObjects' => $this->protectionObjectService->getAllProtectionObjects(),
+                    'objectGroups' => $this->objectGroupRepo->getAllObjectGroups(),
+                    'curators' => $this->curatorRepo->getAllCurators(),
+                    'branches' => $this->branchRepo->getAllBranches(), // ← ОБЯЗАТЕЛЬНО!
+                    'equipmentTypes' => $this->equipmentRepo->getAllEquipmentTypes(),
+                    'equipmentCount' => 0,
+                    'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
+                    'userRole' => $this->auth->user()->position ?? 'Пользователь'
+                ]
+            ];
+
+            // Или если используете шаблонизатор:
+            // return $this->view->render('system/edit.html', [
+            //     'systemSubtypes' => $this->systemCoreService->getAllSystemSubtypes(),
+            //     'protectionObjects' => $this->protectionObjectService->getAllProtectionObjects(),
+            //     'objectGroups' => $this->objectGroupRepo->getAllObjectGroups(),
+            //     'curators' => $this->curatorRepo->getAllCurators(),
+            //     'branches' => $this->branchRepo->getAllBranches(),
+            //     'equipmentTypes' => $this->equipmentRepo->getAllEquipmentTypes(),
+            //     'equipmentCount' => 0,
+            //     'userFullName' => $this->auth->user()->full_name ?? 'Пользователь',
+            //     'userRole' => $this->auth->user()->position ?? 'Пользователь'
+            // ]);
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Ошибка при загрузке формы: ' . $e->getMessage()
+            ];
+        }
+    }
+
 
     /* Обновить систему */
     public function update($id)
@@ -114,7 +182,7 @@ class FireSystemController
         }
 
         try {
-            $system = $this->systemManagementService->updateCompleteSystem($id, request()->all());
+            $system = $this->systemManager->updateCompleteSystem($id, request()->all());
 
             \Log::channel('business')->info('System updated successfully', [
                 'system_id' => $system->systemId
@@ -140,7 +208,7 @@ class FireSystemController
 
     private function updateSystemWithRelations($systemId, $data)
     {
-        \Log::channel('debug')->info('Starting system relations update', ['system_id' => $systemId]);
+        \Log::channel('debug')->infoinfo('Starting system relations update', ['system_id' => $systemId]);
 
         // 1. Обновление основной системы
         $system = $this->updateFireSystem($systemId, $data);
@@ -268,7 +336,7 @@ class FireSystemController
                 if ($equipmentId) {
                     // Обновление существующего оборудования
                     $this->equipmentService->updateEquipment($equipmentId, $equipmentItemData);
-                    \Log::channel('debug')->info('Equipment updated', [
+                    \Log::channel('debug')->infoinfo('Equipment updated', [
                         'equipment_id' => $equipmentId,
                         'index' => $index
                     ]);
@@ -340,7 +408,7 @@ class FireSystemController
     public function destroy($uuid)
     {
         try {
-            \Log::info("Начало удаления системы", ['uuid' => $uuid]);
+            \Log::channel('debug')->info("Начало удаления системы", ['uuid' => $uuid]);
 
             if (!$this->auth->check()) {
                 \Log::warning("Пользователь не авторизован");
@@ -358,7 +426,7 @@ class FireSystemController
             $result = $this->fireSystemService->deleteSystem($uuid);
 
             $statusCode = $result['success'] ? 200 : 500;
-            \Log::info("Удаление завершено", [
+            \Log::channel('debug')->info("Удаление завершено", [
                 'success' => $result['success'],
                 'status_code' => $statusCode
             ]);
@@ -412,8 +480,11 @@ class FireSystemController
         }
 
         try {
+            Log::channel('debug')->info("Начало загрузки формы редактирования системы ID: " . $id);
+
             // Получение данных через сервис
-            $formData = $this->fireSystemService->getFormData($id);
+            $formData = SystemManager::getFormData($id);
+            Log::channel('debug')->info("Данные формы успешно получены", array_keys($formData));
 
             // Рендеринг Blade шаблона
             return view('systems.edit', array_merge($formData, [
@@ -422,7 +493,9 @@ class FireSystemController
             ]));
 
         } catch (\Exception $e) {
-            abort(500, 'Ошибка при загрузке формы редактирования');
+            Log::error("Ошибка в методе edit: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            abort(500, 'Ошибка при загрузке формы редактирования: ' . $e->getMessage());
         }
     }
 }

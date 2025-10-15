@@ -1,5 +1,5 @@
 <?php
-namespace App\Services;
+namespace App\Services\Core;
 
 use App\Data\Repositories\FireSystemRepository;
 use App\Data\Repositories\RepairRepository;

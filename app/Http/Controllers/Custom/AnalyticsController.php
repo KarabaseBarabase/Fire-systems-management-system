@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers\Custom;
 
-use App\Services\AnalyticsService;
+use App\Services\Core\AnalyticsService;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\AuthInterface;
